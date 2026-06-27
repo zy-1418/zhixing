@@ -23,6 +23,7 @@ def upgrade() -> None:
         "users",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("email", sa.String(length=255), nullable=False),
+        sa.Column("password_hash", sa.String(length=255), nullable=False),
         sa.Column("display_name", sa.String(length=128), nullable=True),
         sa.Column("level", sa.Integer(), nullable=False, server_default="1"),
         sa.Column(

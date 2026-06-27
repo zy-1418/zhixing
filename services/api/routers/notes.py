@@ -45,6 +45,36 @@ class NoteResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+def _default_document_blocks(title: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "type": "paragraph",
+            "text": "",
+            "meta": {"placeholder": f"开始记录「{title or '未命名笔记'}」"},
+        }
+    ]
+
+
+def _blocks_to_markdown(note: Note) -> str:
+    lines = [f"# {note.title or '未命名笔记'}", ""]
+    for block in note.blocks:
+        if not isinstance(block, dict):
+            lines.append(str(block))
+            continue
+        text = str(block.get("text", "")).strip()
+        block_type = block.get("type", "paragraph")
+        if block_type == "heading":
+            level = int(block.get("level", 2))
+            lines.append(f"{'#' * max(1, min(level, 6))} {text}")
+        elif block_type == "todo":
+            checked = "x" if block.get("checked") else " "
+            lines.append(f"- [{checked}] {text}")
+        elif text:
+            lines.append(text)
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
 @router.get("", response_model=list[NoteResponse])
 async def list_notes(
     user_id: uuid.UUID = Query(...),
@@ -61,12 +91,15 @@ async def list_notes(
 
 @router.post("", response_model=NoteResponse, status_code=201)
 async def create_note(body: NoteCreate, db: AsyncSession = Depends(get_db)):
+    blocks = body.blocks
+    if body.template_type == "document" and not blocks:
+        blocks = _default_document_blocks(body.title)
     note = Note(
         user_id=body.user_id,
         folder_id=body.folder_id,
         title=body.title,
         template_type=body.template_type,
-        blocks=body.blocks,
+        blocks=blocks,
     )
     db.add(note)
     await db.commit()
@@ -80,6 +113,20 @@ async def get_note(note_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     if note is None:
         raise HTTPException(status_code=404, detail="Note not found")
     return note
+
+
+@router.get("/{note_id}/export")
+async def export_note(
+    note_id: uuid.UUID,
+    format: Literal["json", "markdown"] = Query("markdown"),
+    db: AsyncSession = Depends(get_db),
+):
+    note = await db.get(Note, note_id)
+    if note is None:
+        raise HTTPException(status_code=404, detail="Note not found")
+    if format == "json":
+        return NoteResponse.model_validate(note)
+    return {"content_type": "text/markdown", "content": _blocks_to_markdown(note)}
 
 
 @router.patch("/{note_id}", response_model=NoteResponse)

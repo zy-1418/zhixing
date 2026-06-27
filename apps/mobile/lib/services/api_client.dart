@@ -6,10 +6,12 @@ import 'package:http/http.dart' as http;
 class ApiClient {
   ApiClient({
     this.baseUrl = 'http://127.0.0.1:8080',
+    this.accessToken,
     http.Client? client,
   }) : _client = client ?? http.Client();
 
   final String baseUrl;
+  final String? accessToken;
   final http.Client _client;
 
   Uri _uri(String path, [Map<String, String>? queryParameters]) {
@@ -22,6 +24,7 @@ class ApiClient {
   Map<String, String> _headers({Map<String, String>? extra}) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        if (accessToken != null) 'Authorization': 'Bearer $accessToken',
         ...?extra,
       };
 
@@ -60,6 +63,18 @@ class ApiClient {
     );
   }
 
+  Future<http.Response> patch(
+    String path, {
+    Object? body,
+    Map<String, String>? headers,
+  }) {
+    return _client.patch(
+      _uri(path),
+      headers: _headers(extra: headers),
+      body: body == null ? null : jsonEncode(body),
+    );
+  }
+
   Future<http.Response> delete(
     String path, {
     Map<String, String>? headers,
@@ -82,6 +97,20 @@ class ApiClient {
     );
     _throwIfError(response);
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> getJsonList(
+    String path, {
+    Map<String, String>? queryParameters,
+    Map<String, String>? headers,
+  }) async {
+    final response = await get(
+      path,
+      queryParameters: queryParameters,
+      headers: headers,
+    );
+    _throwIfError(response);
+    return jsonDecode(response.body) as List<dynamic>;
   }
 
   void _throwIfError(http.Response response) {
