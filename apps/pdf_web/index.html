@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>知行双联 PDF</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f7f2ea;
+        color: #3d3832;
+        font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      header {
+        padding: 16px 24px;
+        background: #fffbf5;
+        border-bottom: 1px solid #e8dfd3;
+      }
+      main {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        padding: 16px;
+      }
+      .pane {
+        min-height: 70vh;
+        border: 1px solid #e8dfd3;
+        border-radius: 18px;
+        background: #fffbf5;
+        padding: 16px;
+      }
+      .pane strong {
+        color: #7a2e2a;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>知行双联 PDF 阅读</strong>
+      <span> · pdf.js WebView 原型</span>
+    </header>
+    <main>
+      <section class="pane">
+        <strong>左栏：PDF 原文</strong>
+        <p>本机接入 pdf.js 后在此渲染 PDF 页面。</p>
+      </section>
+      <section class="pane">
+        <strong>右栏：笔记 / 摘录</strong>
+        <p>选中文本后写入知行 document blocks，支持双联阅读。</p>
+      </section>
+    </main>
+  </body>
+</html>

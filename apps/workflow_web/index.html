@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>知行工作流编辑器</title>
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+        background: #f7f2ea;
+        color: #3d3832;
+        font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      .react-flow__node-default {
+        border-color: #e8dfd3;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(92, 34, 32, 0.08);
+      }
+      .toolbar {
+        position: absolute;
+        z-index: 10;
+        top: 16px;
+        left: 16px;
+        padding: 12px 16px;
+        border: 1px solid #e8dfd3;
+        border-radius: 16px;
+        background: #fffbf5;
+      }
+      .toolbar strong {
+        color: #7a2e2a;
+      }
+    </style>
+    <link rel="stylesheet" href="https://esm.sh/@xyflow/react@12.3.6/dist/style.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import React from "https://esm.sh/react@18.3.1";
+      import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+      import {
+        Background,
+        Controls,
+        MiniMap,
+        ReactFlow,
+      } from "https://esm.sh/@xyflow/react@12.3.6";
+
+      const nodes = [
+        {
+          id: "idea",
+          position: { x: 0, y: 120 },
+          data: { label: "用户布置任务" },
+          type: "default",
+        },
+        {
+          id: "dify",
+          position: { x: 260, y: 20 },
+          data: { label: "Dify 轻量对话 / RAG" },
+          type: "default",
+        },
+        {
+          id: "metagpt",
+          position: { x: 260, y: 220 },
+          data: { label: "MetaGPT-X SOP" },
+          type: "default",
+        },
+        {
+          id: "workspace",
+          position: { x: 560, y: 120 },
+          data: { label: "工作区产物 / 笔记" },
+          type: "default",
+        },
+      ];
+
+      const edges = [
+        { id: "idea-dify", source: "idea", target: "dify", label: "轻量" },
+        { id: "idea-metagpt", source: "idea", target: "metagpt", label: "重型" },
+        { id: "dify-workspace", source: "dify", target: "workspace" },
+        { id: "metagpt-workspace", source: "metagpt", target: "workspace" },
+      ];
+
+      function WorkflowEditor() {
+        return React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(
+            "div",
+            { className: "toolbar" },
+            React.createElement("strong", null, "知行工作流"),
+            React.createElement("div", null, "React Flow 静态原型")
+          ),
+          React.createElement(
+            ReactFlow,
+            { nodes, edges, fitView: true },
+            React.createElement(MiniMap, null),
+            React.createElement(Controls, null),
+            React.createElement(Background, null)
+          )
+        );
+      }
+
+      createRoot(document.getElementById("root")).render(
+        React.createElement(WorkflowEditor)
+      );
+    </script>
+  </body>
+</html>
