@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse, PlainTextResponse
 
 from database import get_db
+from models.conversation import Conversation
 from models.workspace_folder import WorkspaceFolder
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
@@ -39,6 +41,34 @@ class FolderResponse(BaseModel):
     name: str
     folder_type: str
     sort_order: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ConversationCreate(BaseModel):
+    user_id: uuid.UUID
+    title: str = Field("新对话", min_length=1, max_length=256)
+    folder_id: Optional[uuid.UUID] = None
+    dify_conversation_id: Optional[str] = Field(None, max_length=128)
+    messages: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ConversationUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=256)
+    folder_id: Optional[uuid.UUID] = None
+    dify_conversation_id: Optional[str] = Field(None, max_length=128)
+    messages: Optional[list[dict[str, Any]]] = None
+
+
+class ConversationResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    folder_id: Optional[uuid.UUID]
+    title: str
+    dify_conversation_id: Optional[str]
+    messages: list[dict[str, Any]]
     created_at: datetime
     updated_at: datetime
 
@@ -109,3 +139,81 @@ async def delete_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=404, detail="Folder not found")
     await db.delete(folder)
     await db.commit()
+
+
+@router.get("/conversations", response_model=list[ConversationResponse])
+async def list_conversations(
+    user_id: uuid.UUID = Query(...),
+    folder_id: Optional[uuid.UUID] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(Conversation).where(Conversation.user_id == user_id)
+    if folder_id is not None:
+        stmt = stmt.where(Conversation.folder_id == folder_id)
+    stmt = stmt.order_by(Conversation.updated_at.desc())
+    result = await db.scalars(stmt)
+    return result.all()
+
+
+@router.post("/conversations", response_model=ConversationResponse, status_code=201)
+async def create_conversation(
+    body: ConversationCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = Conversation(**body.model_dump())
+    db.add(conversation)
+    await db.commit()
+    await db.refresh(conversation)
+    return conversation
+
+
+@router.get("/conversations/{conversation_id}", response_model=ConversationResponse)
+async def get_conversation(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return conversation
+
+
+@router.patch("/conversations/{conversation_id}", response_model=ConversationResponse)
+async def update_conversation(
+    conversation_id: uuid.UUID,
+    body: ConversationUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(conversation, field, value)
+    await db.commit()
+    await db.refresh(conversation)
+    return conversation
+
+
+@router.get("/conversations/{conversation_id}/export")
+async def export_conversation(
+    conversation_id: uuid.UUID,
+    format: Literal["json", "markdown"] = Query("markdown"),
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    if format == "json":
+        payload = ConversationResponse.model_validate(conversation).model_dump(mode="json")
+        return JSONResponse(payload)
+
+    lines = [f"# {conversation.title}", ""]
+    for item in conversation.messages:
+        role = str(item.get("role", "message")).strip() or "message"
+        content = str(item.get("content", "")).strip()
+        lines.extend([f"## {role}", "", content, ""])
+    return PlainTextResponse(
+        "\n".join(lines).strip() + "\n",
+        media_type="text/markdown; charset=utf-8",
+    )

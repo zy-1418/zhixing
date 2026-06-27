@@ -5,7 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import engine
+from routers.auth import router as auth_router
+from routers.commerce import router as commerce_router
+from routers.dify import router as dify_router
+from routers.graph import router as graph_router
+from routers.im import router as im_router
+from routers.market import router as market_router
 from routers.notes import router as notes_router
+from routers.profile import router as profile_router
+from routers.search import router as search_router
+from routers.social import router as social_router
 from routers.tasks import router as tasks_router
 from routers.workspace import router as workspace_router
 
@@ -26,9 +35,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(commerce_router, prefix="/api/v1")
+app.include_router(dify_router, prefix="/api/v1")
+app.include_router(graph_router, prefix="/api/v1")
+app.include_router(im_router, prefix="/api/v1")
+app.include_router(market_router, prefix="/api/v1")
 app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(workspace_router, prefix="/api/v1")
 app.include_router(notes_router, prefix="/api/v1")
+app.include_router(profile_router, prefix="/api/v1")
+app.include_router(search_router, prefix="/api/v1")
+app.include_router(social_router, prefix="/api/v1")
 
 
 @app.get("/health")
@@ -40,7 +58,8 @@ async def health():
 async def stack_info():
     return {
         "project": "zhixing",
-        "phase": "P0",
+        "phase": "P4",
+        "workflow_status": "completed",
         "metagpt_root": settings.metagpt_root,
         "metagpt_x_api": settings.metagpt_x_api,
     }
