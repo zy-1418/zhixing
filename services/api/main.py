@@ -5,9 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import engine
+from routers.auth import router as auth_router
 from routers.notes import router as notes_router
 from routers.tasks import router as tasks_router
 from routers.workspace import router as workspace_router
+from security import decode_access_token
 
 
 @asynccontextmanager
@@ -26,6 +28,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def jwt_state_middleware(request, call_next):
+    request.state.user_id = None
+    authorization = request.headers.get("Authorization", "")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() == "bearer" and token:
+        try:
+            request.state.user_id = decode_access_token(token)["sub"]
+        except ValueError:
+            request.state.user_id = None
+    return await call_next(request)
+
+
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(workspace_router, prefix="/api/v1")
 app.include_router(notes_router, prefix="/api/v1")

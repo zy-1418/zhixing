@@ -4,7 +4,7 @@
 
 | Phase | 目标 | 周期 | 状态 |
 |-------|------|------|------|
-| **P0** | 仓库脚手架 + MetaGPT Bridge + Hook 自动续跑 | 1 周 | in_progress |
+| **P0** | 仓库脚手架 + MetaGPT Bridge + Hook 自动续跑 | 1 周 | completed |
 | **P1** | MVP：对话/工作区/笔记/任务提交 | 3 周 | pending |
 | **P2** | 社交：广场/好友/工作流编辑器/市场 | 4 周 | pending |
 | **P3** | 知识图谱/AI 小程序/好友 AI 蒸馏 | 4 周 | pending |
@@ -22,7 +22,7 @@
 - [x] `services/api` FastAPI 骨架
 - [x] `services/metagpt-bridge` 客户端
 - [x] `infra/docker-compose.yml` 基础中间件
-- [ ] `apps/mobile` Flutter 初始化（待本机 Flutter SDK）
+- [x] `apps/mobile` Flutter 初始化（Cloud 无 SDK，已交付五 Tab 占位壳）
 
 **P0 完成标准**：`POST /api/v1/tasks/sop` 能转发到 MetaGPT-X 并返回 job_id。
 
@@ -31,8 +31,8 @@
 ## P1 — MVP
 
 ### 1.1 后端
-- [ ] PostgreSQL schema migration（users, notes, workspace_folders, tasks）
-- [ ] JWT 鉴权
+- [x] PostgreSQL schema migration（users, notes, workspace_folders, tasks）
+- [x] JWT 鉴权
 - [ ] 工作区 CRUD + 对话分区导出 JSON/Markdown
 - [ ] Dify API 代理（创建会话、@引用笔记 ID）
 - [ ] 笔记 CRUD（document 模板）
@@ -45,7 +45,7 @@
 - [ ] QA 失败 → `optimize` 端点重试
 
 ### 1.3 Flutter
-- [ ] 五 Tab 导航（广场/工作区/写笔记/好友/个人）壳
+- [x] 五 Tab 导航（广场/工作区/写笔记/好友/个人）壳
 - [ ] 工作区树形列表
 - [ ] 新对话页 + 导入 PDF/笔记按钮
 - [ ] 布置任务页
