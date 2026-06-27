@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     access_token_expires_minutes: int = 60 * 24 * 7
     dify_api_base_url: str = "http://127.0.0.1/v1"
     dify_api_key: str | None = None
+    openim_api_base_url: str = "http://127.0.0.1:10002"
+    openim_admin_token: str | None = None
     redis_url: str = "redis://localhost:6379/0"
     metagpt_x_api: str = "http://127.0.0.1:8000"
     metagpt_root: str = r"G:\MetaGPT"

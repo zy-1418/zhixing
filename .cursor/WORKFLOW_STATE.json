@@ -4,7 +4,7 @@
   "loop_limit": 999,
   "mode": "overnight-full",
   "started_at": null,
-  "current_step": "p2-openim",
+  "current_step": "p2-square",
   "notes": "Cloud Agent / Hook 共用。每步完成后更新 current_step 与 status。全部 completed 后设 auto_continue=false。",
   "steps": [
     {"id":"p0-docker","phase":"P0","title":"验证 docker-compose","prompt":"知行 P0：cd infra && docker compose config；修复 compose 问题；更新 WORKFLOW_STATE current_step=p0-flutter","status":"completed"},
@@ -24,8 +24,8 @@
     {"id":"p1-flutter-notes","phase":"P1","title":"Flutter 笔记编辑","prompt":"知行 P1：纯文档笔记编辑器；step=p1-dify-deploy","status":"completed"},
     {"id":"p1-dify-deploy","phase":"P1","title":"Dify 自托管","prompt":"知行 P1：vendor/dify docker 启动文档 + 创建「林」Agent 配置说明；step=p2-openim","status":"completed"},
 
-    {"id":"p2-openim","phase":"P2","title":"OpenIM 集成设计","prompt":"知行 P2：docs/OPENIM.md + IM bridge 骨架；step=p2-square","status":"in_progress"},
-    {"id":"p2-square","phase":"P2","title":"广场 Feed","prompt":"知行 P2：social_posts API + 赞/踩需理由；step=p2-debate","status":"pending"},
+    {"id":"p2-openim","phase":"P2","title":"OpenIM 集成设计","prompt":"知行 P2：docs/OPENIM.md + IM bridge 骨架；step=p2-square","status":"completed"},
+    {"id":"p2-square","phase":"P2","title":"广场 Feed","prompt":"知行 P2：social_posts API + 赞/踩需理由；step=p2-debate","status":"in_progress"},
     {"id":"p2-debate","phase":"P2","title":"结构化辩论","prompt":"知行 P2：debates + comments 正/反 + 置顶算法；step=p2-workflow-ui","status":"pending"},
     {"id":"p2-workflow-ui","phase":"P2","title":"工作流 WebView","prompt":"知行 P2：React Flow 静态页 + Flutter WebView 嵌入；step=p2-market","status":"pending"},
     {"id":"p2-market","phase":"P2","title":"插件市场","prompt":"知行 P2：agents market API 同步 Dify tools；step=p2-search","status":"pending"},
