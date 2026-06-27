@@ -49,7 +49,7 @@
 - [x] 工作区树形列表
 - [x] 新对话页 + 导入 PDF/笔记按钮
 - [x] 布置任务页
-- [ ] 纯文档笔记编辑器
+- [x] 纯文档笔记编辑器
 
 ### 1.4 基础设施
 - [ ] docker compose up：postgres, redis, qdrant, meilisearch
