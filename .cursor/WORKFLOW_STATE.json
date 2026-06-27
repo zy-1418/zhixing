@@ -4,7 +4,7 @@
   "loop_limit": 999,
   "mode": "overnight-full",
   "started_at": null,
-  "current_step": "p2-profile",
+  "current_step": "p3-neo4j",
   "notes": "Cloud Agent / Hook 共用。每步完成后更新 current_step 与 status。全部 completed 后设 auto_continue=false。",
   "steps": [
     {"id":"p0-docker","phase":"P0","title":"验证 docker-compose","prompt":"知行 P0：cd infra && docker compose config；修复 compose 问题；更新 WORKFLOW_STATE current_step=p0-flutter","status":"completed"},
@@ -30,9 +30,9 @@
     {"id":"p2-workflow-ui","phase":"P2","title":"工作流 WebView","prompt":"知行 P2：React Flow 静态页 + Flutter WebView 嵌入；step=p2-market","status":"completed"},
     {"id":"p2-market","phase":"P2","title":"插件市场","prompt":"知行 P2：agents market API 同步 Dify tools；step=p2-search","status":"completed"},
     {"id":"p2-search","phase":"P2","title":"Meilisearch 搜索","prompt":"知行 P2：索引 notes/posts + 搜索 API + Flutter 搜索页；step=p2-profile","status":"completed"},
-    {"id":"p2-profile","phase":"P2","title":"个人主页","prompt":"知行 P2：profile API 作品/点赞/收藏/标签 + Flutter 页；step=p3-neo4j","status":"in_progress"},
+    {"id":"p2-profile","phase":"P2","title":"个人主页","prompt":"知行 P2：profile API 作品/点赞/收藏/标签 + Flutter 页；step=p3-neo4j","status":"completed"},
 
-    {"id":"p3-neo4j","phase":"P3","title":"Neo4j 图谱","prompt":"知行 P3：docker neo4j + 笔记关系抽取 pipeline；step=p3-sigma","status":"pending"},
+    {"id":"p3-neo4j","phase":"P3","title":"Neo4j 图谱","prompt":"知行 P3：docker neo4j + 笔记关系抽取 pipeline；step=p3-sigma","status":"in_progress"},
     {"id":"p3-sigma","phase":"P3","title":"sigma 图谱 UI","prompt":"知行 P3：sigma.js WebView 广场图谱 + DIY 页；step=p3-friend-ai","status":"pending"},
     {"id":"p3-friend-ai","phase":"P3","title":"好友 AI 蒸馏","prompt":"知行 P3：按用户 Qdrant 分库 + 好友 AI 切换 API；step=p3-miniprogram","status":"pending"},
     {"id":"p3-miniprogram","phase":"P3","title":"AI 小程序","prompt":"知行 P3：自制小程序对话 + Dify workflow 生成；step=p3-canvas","status":"pending"},
