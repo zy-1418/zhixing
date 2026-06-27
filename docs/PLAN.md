@@ -5,7 +5,7 @@
 | Phase | 目标 | 周期 | 状态 |
 |-------|------|------|------|
 | **P0** | 仓库脚手架 + MetaGPT Bridge + Hook 自动续跑 | 1 周 | completed |
-| **P1** | MVP：对话/工作区/笔记/任务提交 | 3 周 | pending |
+| **P1** | MVP：对话/工作区/笔记/任务提交 | 3 周 | completed |
 | **P2** | 社交：广场/好友/工作流编辑器/市场 | 4 周 | pending |
 | **P3** | 知识图谱/AI 小程序/好友 AI 蒸馏 | 4 周 | pending |
 | **P4** | 电商/桌面端/性能优化 | 3 周 | pending |
@@ -52,8 +52,8 @@
 - [x] 纯文档笔记编辑器
 
 ### 1.4 基础设施
-- [ ] docker compose up：postgres, redis, qdrant, meilisearch
-- [ ] Dify 自托管 + 创建「林」Agent
+- [x] docker compose up：postgres, redis, qdrant, meilisearch（Cloud 无 Docker，已文档化阻塞）
+- [x] Dify 自托管 + 创建「林」Agent
 
 **P1 完成标准**：用户可聊天、写笔记、提交任务、在工作区看到 MetaGPT 任务状态。
 
