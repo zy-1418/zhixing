@@ -34,7 +34,7 @@
 - [x] PostgreSQL schema migration（users, notes, workspace_folders, tasks）
 - [x] JWT 鉴权
 - [x] 工作区 CRUD + 对话分区导出 JSON/Markdown
-- [ ] Dify API 代理（创建会话、@引用笔记 ID）
+- [x] Dify API 代理（创建会话、@引用笔记 ID）
 - [x] 笔记 CRUD（document 模板）
 - [ ] 任务日历 API（对接 tasks 表）
 

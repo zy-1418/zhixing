@@ -5,6 +5,7 @@
 - Docker：当前镜像缺少 `docker` 命令，无法执行 `infra/docker-compose.yml` 的本机启动验证；已保留 compose 配置，需在本机或 CI Docker 环境复验。
 - Flutter SDK：当前镜像缺少 `flutter` 命令，移动端以手写 Flutter 五 Tab 壳与占位页面交付；需在本机 Flutter stable 环境运行 `flutter analyze` / `flutter run`。
 - MetaGPT-X：Cloud 环境无法访问宿主机 `127.0.0.1:8000`，`POST /api/v1/tasks/sop` 的真实转发联调需在本机启动 MetaGPT-X 后复验。
+- Dify：Cloud 环境未配置 `DIFY_API_KEY`，Dify 代理路由会返回占位响应；配置自托管或 Cloud Dify Key 后可直接转发 `/chat-messages` 与 `/files/upload`。
 
 ## 处理策略
 
