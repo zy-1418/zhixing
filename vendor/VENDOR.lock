@@ -1,0 +1,4 @@
+# Vendor repos — run scripts/clone-deps.ps1
+dify=https://github.com/langgenius/dify.git@main
+tldraw=https://github.com/tldraw/tldraw.git@main
+metagpt=G:\MetaGPT (junction)

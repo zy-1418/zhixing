@@ -1,0 +1,10 @@
+vendor/dify/
+vendor/tldraw/
+vendor/meilisearch/
+vendor/metagpt/
+*.env
+!*.env.example
+__pycache__/
+.pytest_cache/
+.dart_tool/
+build/

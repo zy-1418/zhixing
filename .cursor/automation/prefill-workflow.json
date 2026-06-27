@@ -1,0 +1,22 @@
+{
+  "name": "知行全量夜间实施",
+  "description": "按 WORKFLOW_STATE.json 执行 P0-P4 直至完成；嵌入 MetaGPT；无需用户说继续",
+  "workflow": {
+    "triggers": [],
+    "actions": [],
+    "prompts": [
+      {
+        "prompt": "你是知行（Zhixing）项目实施 Agent。读取 .cursor/WORKFLOW_STATE.json，执行 current_step 对应 prompt，完成后更新状态并立即执行下一步，直到全部 completed 或 auto_continue=false。必读 docs/PLAN.md docs/STACK.md docs/METAGPT_INTEGRATION.md。不要停下来等用户确认。阻塞时写 docs/BLOCKERS.md 并跳过继续。MetaGPT 联调步骤在 Cloud 环境可跳过。"
+      }
+    ],
+    "model": "",
+    "agentOptions": {
+      "skipInstall": false
+    },
+    "memoryEnabled": true,
+    "gitConfig": {
+      "repo": "",
+      "branch": "main"
+    }
+  }
+}
