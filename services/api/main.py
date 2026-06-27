@@ -11,6 +11,7 @@ from routers.dify import router as dify_router
 from routers.im import router as im_router
 from routers.market import router as market_router
 from routers.notes import router as notes_router
+from routers.search import router as search_router
 from routers.social import router as social_router
 from routers.tasks import router as tasks_router
 from routers.workspace import router as workspace_router
@@ -51,6 +52,7 @@ app.include_router(debates_router, prefix="/api/v1")
 app.include_router(dify_router, prefix="/api/v1")
 app.include_router(im_router, prefix="/api/v1")
 app.include_router(market_router, prefix="/api/v1")
+app.include_router(search_router, prefix="/api/v1")
 app.include_router(social_router, prefix="/api/v1")
 app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(workspace_router, prefix="/api/v1")
