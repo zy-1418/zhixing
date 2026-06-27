@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     neo4j_password: str = "zhixing_graph_dev"
     qdrant_url: str = "http://127.0.0.1:6333"
     qdrant_api_key: str | None = None
+    medusa_backend_url: str = "http://127.0.0.1:9000"
+    medusa_api_key: str | None = None
     redis_url: str = "redis://localhost:6379/0"
     metagpt_x_api: str = "http://127.0.0.1:8000"
     metagpt_root: str = r"G:\MetaGPT"

@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from database import engine
 from routers.auth import router as auth_router
+from routers.commerce import router as commerce_router
 from routers.debates import router as debates_router
 from routers.dify import router as dify_router
 from routers.friend_ai import router as friend_ai_router
@@ -52,6 +53,7 @@ async def jwt_state_middleware(request, call_next):
 
 
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(commerce_router, prefix="/api/v1")
 app.include_router(debates_router, prefix="/api/v1")
 app.include_router(dify_router, prefix="/api/v1")
 app.include_router(friend_ai_router, prefix="/api/v1")
