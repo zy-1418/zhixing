@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_client.dart';
 import '../../theme/app_theme.dart';
 import 'canvas_note_screen.dart';
+import 'dual_pdf_screen.dart';
 
 class WriteNoteScreen extends StatefulWidget {
   const WriteNoteScreen({super.key});
@@ -103,6 +104,16 @@ class _WriteNoteScreenState extends State<WriteNoteScreen> {
             },
             icon: const Icon(Icons.draw_outlined),
             label: const Text('打开无限画布'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DualPdfScreen()),
+              );
+            },
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            label: const Text('打开双联 PDF'),
           ),
           const SizedBox(height: 20),
           TextField(

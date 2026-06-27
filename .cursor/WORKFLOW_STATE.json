@@ -4,7 +4,7 @@
   "loop_limit": 999,
   "mode": "overnight-full",
   "started_at": null,
-  "current_step": "p3-dual-pdf",
+  "current_step": "p4-medusa",
   "notes": "Cloud Agent / Hook 共用。每步完成后更新 current_step 与 status。全部 completed 后设 auto_continue=false。",
   "steps": [
     {"id":"p0-docker","phase":"P0","title":"验证 docker-compose","prompt":"知行 P0：cd infra && docker compose config；修复 compose 问题；更新 WORKFLOW_STATE current_step=p0-flutter","status":"completed"},
@@ -37,9 +37,9 @@
     {"id":"p3-friend-ai","phase":"P3","title":"好友 AI 蒸馏","prompt":"知行 P3：按用户 Qdrant 分库 + 好友 AI 切换 API；step=p3-miniprogram","status":"completed"},
     {"id":"p3-miniprogram","phase":"P3","title":"AI 小程序","prompt":"知行 P3：自制小程序对话 + Dify workflow 生成；step=p3-canvas","status":"completed"},
     {"id":"p3-canvas","phase":"P3","title":"tldraw 画布","prompt":"知行 P3：无限画布 WebView 笔记模板；step=p3-dual-pdf","status":"completed"},
-    {"id":"p3-dual-pdf","phase":"P3","title":"双联 PDF","prompt":"知行 P3：pdf.js 双栏阅读组件；step=p4-medusa","status":"in_progress"},
+    {"id":"p3-dual-pdf","phase":"P3","title":"双联 PDF","prompt":"知行 P3：pdf.js 双栏阅读组件；step=p4-medusa","status":"completed"},
 
-    {"id":"p4-medusa","phase":"P4","title":"Medusa 电商","prompt":"知行 P4：Medusa 对接订单/购物车/钱包 API 代理；step=p4-desktop","status":"pending"},
+    {"id":"p4-medusa","phase":"P4","title":"Medusa 电商","prompt":"知行 P4：Medusa 对接订单/购物车/钱包 API 代理；step=p4-desktop","status":"in_progress"},
     {"id":"p4-desktop","phase":"P4","title":"桌面端","prompt":"知行 P4：Flutter desktop 或 Tauri 打包脚本；step=p4-offline","status":"pending"},
     {"id":"p4-offline","phase":"P4","title":"离线缓存","prompt":"知行 P4：Flutter 离线笔记缓存；step=p4-final","status":"pending"},
     {"id":"p4-final","phase":"P4","title":"最终验收","prompt":"知行 P4：更新 PLAN.md 全部勾选，auto_continue=false，写 docs/RELEASE.md 总结。","status":"pending"}
