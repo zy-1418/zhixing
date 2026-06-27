@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../services/api_client.dart';
+import '../../services/offline_note_cache.dart';
 import '../../theme/app_theme.dart';
 import 'canvas_note_screen.dart';
 import 'dual_pdf_screen.dart';
@@ -51,14 +52,19 @@ class _WriteNoteScreenState extends State<WriteNoteScreen> {
     });
 
     try {
+      final blocks = _blocks();
       final response = await _api.post(
         '/api/v1/notes',
         body: {
           'user_id': _demoUserId,
           'title': _titleController.text.trim(),
           'template_type': 'document',
-          'blocks': _blocks(),
+          'blocks': blocks,
         },
+      );
+      OfflineNoteCache.instance.put(
+        title: _titleController.text.trim(),
+        blocks: blocks,
       );
       final decoded = response.body.isEmpty
           ? {'status': response.statusCode}
