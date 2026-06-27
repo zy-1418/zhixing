@@ -4,6 +4,7 @@ import '../../services/api_client.dart';
 import '../../theme/app_theme.dart';
 import 'new_conversation_screen.dart';
 import 'new_task_screen.dart';
+import 'workflow_webview_screen.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   const WorkspaceScreen({super.key});
@@ -111,6 +112,18 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const WorkflowWebViewScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.account_tree_outlined),
+              label: const Text('工作流编辑器'),
             ),
             const SizedBox(height: 20),
             Expanded(

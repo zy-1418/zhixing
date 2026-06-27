@@ -64,7 +64,7 @@
 - [x] OpenIM 集成（好友/群聊/团队）
 - [x] 广场 Feed + 赞/踩需理由
 - [x] 结构化辩论（正/反评论 + 置顶算法）
-- [ ] React Flow 工作流 WebView
+- [x] React Flow 工作流 WebView
 - [ ] Dify Agent 插件市场同步
 - [ ] 搜索（Meilisearch 索引笔记与帖子）
 - [ ] 个人主页（作品/收藏/标签）
