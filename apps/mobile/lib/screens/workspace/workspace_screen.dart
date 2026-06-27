@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_client.dart';
 import '../../theme/app_theme.dart';
 import 'new_conversation_screen.dart';
+import 'new_task_screen.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   const WorkspaceScreen({super.key});
@@ -80,16 +81,36 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ),
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const NewConversationScreen(),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const NewConversationScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add_comment_outlined),
+                    label: const Text('新对话'),
                   ),
-                );
-              },
-              icon: const Icon(Icons.add_comment_outlined),
-              label: const Text('新对话 / 导入资料'),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const NewTaskScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add_task),
+                    label: const Text('布置任务'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             Expanded(
