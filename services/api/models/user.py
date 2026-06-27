@@ -11,6 +11,7 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "users"
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
     display_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     level: Mapped[int] = mapped_column(Integer, default=1)
     tags: Mapped[list] = mapped_column(JSONB, default=list)
