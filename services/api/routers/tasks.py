@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -255,6 +255,51 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         return await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+async def _proxy_metagpt_logs(websocket: WebSocket, job_id: str):
+    await websocket.accept()
+    client = MetaGPTClient(base_url=settings.metagpt_x_api, timeout=30.0)
+    try:
+        async for message in client.stream_logs_ws(job_id):
+            await websocket.send_text(message)
+    except Exception as exc:
+        await websocket.send_json(
+            {
+                "type": "placeholder",
+                "provider": "metagpt-x",
+                "status": "skipped",
+                "job_id": job_id,
+                "reason": f"MetaGPT-X WebSocket unavailable: {exc}",
+            }
+        )
+    finally:
+        await websocket.close()
+
+
+@router.websocket("/metagpt/{job_id}/logs")
+async def stream_metagpt_logs(websocket: WebSocket, job_id: str):
+    await _proxy_metagpt_logs(websocket, job_id)
+
+
+@router.websocket("/{task_id}/logs")
+async def stream_task_logs(
+    websocket: WebSocket, task_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        await websocket.accept()
+        await websocket.send_json({"type": "error", "detail": "Task not found"})
+        await websocket.close(code=1008)
+        return
+    if not task.metagpt_job_id:
+        await websocket.accept()
+        await websocket.send_json(
+            {"type": "placeholder", "detail": "Task has no MetaGPT job yet"}
+        )
+        await websocket.close()
+        return
+    await _proxy_metagpt_logs(websocket, task.metagpt_job_id)
 
 
 @router.get("/{task_id}", response_model=TaskRecordResponse)

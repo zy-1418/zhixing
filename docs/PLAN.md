@@ -39,10 +39,10 @@
 - [x] 任务日历 API（对接 tasks 表）
 
 ### 1.2 MetaGPT 深度对接
-- [ ] 任务类型映射：研究型/写作型/检索型 → SOP idea 模板
+- [x] 任务类型映射：研究型/写作型/检索型 → SOP idea 模板
 - [x] 优先级队列：高→MetaGPT 插队标记；中/低→Redis 延迟队列
-- [ ] WS 日志转发到 Flutter
-- [ ] QA 失败 → `optimize` 端点重试
+- [x] WS 日志转发到 Flutter
+- [x] QA 失败 → `optimize` 端点重试
 
 ### 1.3 Flutter
 - [x] 五 Tab 导航（广场/工作区/写笔记/好友/个人）壳
