@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/api_client.dart';
 import '../../theme/app_theme.dart';
+import 'canvas_note_screen.dart';
 
 class WriteNoteScreen extends StatefulWidget {
   const WriteNoteScreen({super.key});
@@ -92,6 +93,16 @@ class _WriteNoteScreenState extends State<WriteNoteScreen> {
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CanvasNoteScreen()),
+              );
+            },
+            icon: const Icon(Icons.draw_outlined),
+            label: const Text('打开无限画布'),
           ),
           const SizedBox(height: 20),
           TextField(

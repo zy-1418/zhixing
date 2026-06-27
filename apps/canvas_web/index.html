@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>知行无限画布</title>
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import React from "https://esm.sh/react@18.3.1";
+      import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+      import { Tldraw } from "https://esm.sh/tldraw@3.7.1";
+      import "https://esm.sh/tldraw@3.7.1/tldraw.css";
+
+      function CanvasApp() {
+        return React.createElement(Tldraw, {
+          persistenceKey: "zhixing-canvas-template",
+        });
+      }
+
+      createRoot(document.getElementById("root")).render(
+        React.createElement(CanvasApp)
+      );
+    </script>
+  </body>
+</html>

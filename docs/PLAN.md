@@ -77,7 +77,7 @@
 - [x] sigma.js 图谱 WebView（广场 + DIY 页）
 - [x] 好友 AI：按用户笔记分库 RAG（Dify + Qdrant）
 - [x] AI 小程序：Dify Workflow + e2b 沙箱
-- [ ] tldraw 无限画布模板
+- [x] tldraw 无限画布模板
 - [ ] 双联 PDF 阅读
 
 ---
