@@ -12,6 +12,7 @@ from routers.friend_ai import router as friend_ai_router
 from routers.graph import router as graph_router
 from routers.im import router as im_router
 from routers.market import router as market_router
+from routers.mini_programs import router as mini_programs_router
 from routers.notes import router as notes_router
 from routers.profile import router as profile_router
 from routers.search import router as search_router
@@ -57,6 +58,7 @@ app.include_router(friend_ai_router, prefix="/api/v1")
 app.include_router(graph_router, prefix="/api/v1")
 app.include_router(im_router, prefix="/api/v1")
 app.include_router(market_router, prefix="/api/v1")
+app.include_router(mini_programs_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
 app.include_router(search_router, prefix="/api/v1")
 app.include_router(social_router, prefix="/api/v1")
