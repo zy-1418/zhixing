@@ -6,6 +6,8 @@
 - `services/api/routers/graph.py` 提供笔记关系抽取占位管线：
   - `POST /api/v1/graph/notes/{note_id}/extract`
   - `GET /api/v1/graph/preview`
+- `apps/graph_web/index.html`：sigma.js 静态图谱原型。
+- `apps/mobile/lib/screens/square/graph_webview_screen.dart`：Flutter 图谱 WebView 占位入口。
 
 ## 抽取策略
 

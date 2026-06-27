@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/api_client.dart';
 import '../../theme/app_theme.dart';
+import 'graph_webview_screen.dart';
 
 class SquareScreen extends StatefulWidget {
   const SquareScreen({super.key});
@@ -75,6 +76,16 @@ class _SquareScreenState extends State<SquareScreen> {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const GraphWebViewScreen()),
+                );
+              },
+              icon: const Icon(Icons.hub_outlined),
+              label: const Text('打开知识图谱'),
             ),
             const SizedBox(height: 20),
             TextField(

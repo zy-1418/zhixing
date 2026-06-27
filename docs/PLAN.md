@@ -74,7 +74,7 @@
 ## P3 — 知识图谱与 AI 小程序
 
 - [x] Neo4j 笔记关系抽取 pipeline
-- [ ] sigma.js 图谱 WebView（广场 + DIY 页）
+- [x] sigma.js 图谱 WebView（广场 + DIY 页）
 - [ ] 好友 AI：按用户笔记分库 RAG（Dify + Qdrant）
 - [ ] AI 小程序：Dify Workflow + e2b 沙箱
 - [ ] tldraw 无限画布模板
