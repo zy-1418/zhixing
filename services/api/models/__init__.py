@@ -1,3 +1,4 @@
+from models.agent_tool import AgentTool
 from models.base import Base
 from models.conversation import Conversation
 from models.debate import Debate
@@ -20,4 +21,5 @@ __all__ = [
     "SocialVote",
     "Debate",
     "DebateComment",
+    "AgentTool",
 ]
