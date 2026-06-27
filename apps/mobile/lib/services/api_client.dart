@@ -84,6 +84,16 @@ class ApiClient {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> postJson(
+    String path, {
+    Object? body,
+    Map<String, String>? headers,
+  }) async {
+    final response = await post(path, body: body, headers: headers);
+    _throwIfError(response);
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   void _throwIfError(http.Response response) {
     if (response.statusCode >= 400) {
       throw ApiException(
