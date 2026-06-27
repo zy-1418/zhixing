@@ -38,7 +38,7 @@ class PlaceholderTab extends StatelessWidget {
                     Icon(
                       icon,
                       size: 64,
-                      color: AppColors.maroon.withValues(alpha: 0.6),
+                      color: AppColors.maroon.withOpacity(0.6),
                     ),
                     const SizedBox(height: 16),
                     Text(

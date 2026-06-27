@@ -45,6 +45,20 @@ class NoteResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+def _default_blocks(title: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "type": "heading",
+            "level": 1,
+            "text": title or "未命名笔记",
+        },
+        {
+            "type": "paragraph",
+            "text": "",
+        },
+    ]
+
+
 @router.get("", response_model=list[NoteResponse])
 async def list_notes(
     user_id: uuid.UUID = Query(...),
@@ -61,12 +75,15 @@ async def list_notes(
 
 @router.post("", response_model=NoteResponse, status_code=201)
 async def create_note(body: NoteCreate, db: AsyncSession = Depends(get_db)):
+    blocks = body.blocks
+    if body.template_type == "document" and not blocks:
+        blocks = _default_blocks(body.title)
     note = Note(
         user_id=body.user_id,
         folder_id=body.folder_id,
         title=body.title,
         template_type=body.template_type,
-        blocks=body.blocks,
+        blocks=blocks,
     )
     db.add(note)
     await db.commit()
