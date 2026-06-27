@@ -62,7 +62,7 @@
 ## P2 — 社交与工作流
 
 - [x] OpenIM 集成（好友/群聊/团队）
-- [ ] 广场 Feed + 赞/踩需理由
+- [x] 广场 Feed + 赞/踩需理由
 - [ ] React Flow 工作流 WebView
 - [ ] Dify Agent 插件市场同步
 - [ ] 搜索（Meilisearch 索引笔记与帖子）
