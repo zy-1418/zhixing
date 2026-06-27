@@ -16,6 +16,26 @@ router = APIRouter(prefix="/notes", tags=["notes"])
 
 TemplateType = Literal["document", "dual", "canvas", "mindmap"]
 
+DOCUMENT_TEMPLATE_BLOCKS: list[dict[str, Any]] = [
+    {
+        "type": "heading",
+        "level": 1,
+        "text": "",
+        "placeholder": "写下标题",
+    },
+    {
+        "type": "paragraph",
+        "text": "",
+        "placeholder": "记录想法、资料摘录或对话结论...",
+    },
+]
+
+
+def _default_blocks(template_type: TemplateType) -> list[dict[str, Any]]:
+    if template_type == "document":
+        return [block.copy() for block in DOCUMENT_TEMPLATE_BLOCKS]
+    return []
+
 
 class NoteCreate(BaseModel):
     user_id: uuid.UUID
@@ -45,6 +65,11 @@ class NoteResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class NoteTemplateResponse(BaseModel):
+    template_type: TemplateType
+    blocks: list[Any]
+
+
 @router.get("", response_model=list[NoteResponse])
 async def list_notes(
     user_id: uuid.UUID = Query(...),
@@ -59,6 +84,14 @@ async def list_notes(
     return result.all()
 
 
+@router.get("/templates/{template_type}", response_model=NoteTemplateResponse)
+async def get_note_template(template_type: TemplateType):
+    return NoteTemplateResponse(
+        template_type=template_type,
+        blocks=_default_blocks(template_type),
+    )
+
+
 @router.post("", response_model=NoteResponse, status_code=201)
 async def create_note(body: NoteCreate, db: AsyncSession = Depends(get_db)):
     note = Note(
@@ -66,7 +99,7 @@ async def create_note(body: NoteCreate, db: AsyncSession = Depends(get_db)):
         folder_id=body.folder_id,
         title=body.title,
         template_type=body.template_type,
-        blocks=body.blocks,
+        blocks=body.blocks or _default_blocks(body.template_type),
     )
     db.add(note)
     await db.commit()
