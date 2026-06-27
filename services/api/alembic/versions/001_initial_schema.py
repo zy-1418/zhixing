@@ -153,6 +153,7 @@ def upgrade() -> None:
             server_default="pending",
         ),
         sa.Column("metagpt_job_id", sa.String(length=128), nullable=True),
+        sa.Column("due_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

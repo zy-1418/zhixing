@@ -3,11 +3,14 @@ from __future__ import annotations
 import re
 import sys
 import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Literal, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # services/ on path for metagpt_bridge package
 _SERVICES = Path(__file__).resolve().parents[2]
@@ -18,29 +21,95 @@ from metagpt_bridge.client import MetaGPTBridgeError, MetaGPTClient
 from metagpt_bridge.templates import build_idea, write_spec_file
 
 from config import settings
+from database import get_db
+from models.task import Task
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 WorkflowType = Literal["research", "writing", "search", "custom"]
 Priority = Literal["high", "medium", "low"]
+TaskStatus = Literal[
+    "pending", "queued", "running", "completed", "failed", "blocked"
+]
 
 
 class SubmitSopTaskRequest(BaseModel):
+    user_id: Optional[uuid.UUID] = None
+    folder_id: Optional[uuid.UUID] = None
     instruction: str = Field(..., min_length=1, description="一句话布置")
     workflow_type: WorkflowType = "custom"
     priority: Priority = "medium"
     name: Optional[str] = None
+    due_at: Optional[datetime] = None
     context_notes: Optional[str] = Field(None, description="工作区笔记上下文")
     run_tests: bool = True
     skip_dev: bool = False
 
 
-class TaskResponse(BaseModel):
+class SopTaskResponse(BaseModel):
     zhixing_task_id: str
     metagpt_job_id: str
     name: str
     status: str
     queue: Optional[dict] = None
+
+
+class TaskCreate(BaseModel):
+    user_id: uuid.UUID
+    instruction: str = Field(..., min_length=1)
+    folder_id: Optional[uuid.UUID] = None
+    name: Optional[str] = Field(None, max_length=128)
+    workflow_type: WorkflowType = "custom"
+    priority: Priority = "medium"
+    status: TaskStatus = "pending"
+    due_at: Optional[datetime] = None
+
+
+class TaskUpdate(BaseModel):
+    instruction: Optional[str] = Field(None, min_length=1)
+    folder_id: Optional[uuid.UUID] = None
+    name: Optional[str] = Field(None, max_length=128)
+    workflow_type: Optional[WorkflowType] = None
+    priority: Optional[Priority] = None
+    status: Optional[TaskStatus] = None
+    due_at: Optional[datetime] = None
+    metagpt_job_id: Optional[str] = Field(None, max_length=128)
+
+
+class TaskRecordResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    folder_id: Optional[uuid.UUID]
+    instruction: str
+    name: Optional[str]
+    workflow_type: str
+    priority: str
+    status: str
+    metagpt_job_id: Optional[str]
+    due_at: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+def _queue_plan(priority: Priority) -> dict:
+    if priority == "high":
+        strategy = "redis:lpush"
+        queue_name = "zhixing:tasks:high"
+    elif priority == "low":
+        strategy = "redis:zadd-delayed"
+        queue_name = "zhixing:tasks:low_delayed"
+    else:
+        strategy = "redis:rpush"
+        queue_name = "zhixing:tasks:medium"
+
+    return {
+        "redis_url": settings.redis_url,
+        "queue_name": queue_name,
+        "strategy": strategy,
+        "status": "skeleton",
+    }
 
 
 def _slugify(text: str) -> str:
@@ -49,11 +118,78 @@ def _slugify(text: str) -> str:
     return (s[:48] or "task").strip("-")
 
 
-@router.post("/sop", response_model=TaskResponse)
-async def submit_sop_task(body: SubmitSopTaskRequest):
+@router.get("", response_model=list[TaskRecordResponse])
+async def list_tasks(
+    user_id: uuid.UUID = Query(...),
+    status: Optional[TaskStatus] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(Task).where(Task.user_id == user_id)
+    if status is not None:
+        stmt = stmt.where(Task.status == status)
+    stmt = stmt.order_by(Task.due_at.asc().nullslast(), Task.created_at.desc())
+    result = await db.scalars(stmt)
+    return result.all()
+
+
+@router.post("", response_model=TaskRecordResponse, status_code=201)
+async def create_task(body: TaskCreate, db: AsyncSession = Depends(get_db)):
+    task = Task(**body.model_dump())
+    db.add(task)
+    await db.commit()
+    await db.refresh(task)
+    return task
+
+
+@router.get("/calendar", response_model=list[TaskRecordResponse])
+async def task_calendar(
+    user_id: uuid.UUID = Query(...),
+    start: Optional[datetime] = Query(None),
+    end: Optional[datetime] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(Task).where(Task.user_id == user_id, Task.due_at.is_not(None))
+    if start is not None:
+        stmt = stmt.where(Task.due_at >= start)
+    if end is not None:
+        stmt = stmt.where(Task.due_at <= end)
+    stmt = stmt.order_by(Task.due_at.asc())
+    result = await db.scalars(stmt)
+    return result.all()
+
+
+@router.get("/priority-queue/plan")
+async def priority_queue_plan():
+    return {
+        "high": _queue_plan("high"),
+        "medium": _queue_plan("medium"),
+        "low": _queue_plan("low"),
+    }
+
+
+@router.post("/sop", response_model=SopTaskResponse)
+async def submit_sop_task(
+    body: SubmitSopTaskRequest, db: AsyncSession = Depends(get_db)
+):
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
     name = body.name or _slugify(body.instruction)[:32]
     name = f"{name}-{uuid.uuid4().hex[:6]}"
+    task: Task | None = None
+
+    if body.user_id:
+        task = Task(
+            user_id=body.user_id,
+            folder_id=body.folder_id,
+            instruction=body.instruction,
+            name=name,
+            workflow_type=body.workflow_type,
+            priority=body.priority,
+            status="pending",
+            due_at=body.due_at,
+        )
+        db.add(task)
+        await db.commit()
+        await db.refresh(task)
 
     if body.context_notes:
         write_spec_file(name, body.context_notes, Path(settings.metagpt_root))
@@ -79,8 +215,14 @@ async def submit_sop_task(body: SubmitSopTaskRequest):
     job_id = job.get("id") or job.get("job_id") or str(job)
     queue = await client.queue_status()
 
-    return TaskResponse(
-        zhixing_task_id=str(uuid.uuid4()),
+    if task is not None:
+        task.metagpt_job_id = str(job_id)
+        task.status = job.get("status", "queued")
+        await db.commit()
+        await db.refresh(task)
+
+    return SopTaskResponse(
+        zhixing_task_id=str(task.id if task is not None else uuid.uuid4()),
         metagpt_job_id=str(job_id),
         name=name,
         status=job.get("status", "queued"),
@@ -113,3 +255,51 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         return await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.get("/{task_id}", response_model=TaskRecordResponse)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.patch("/{task_id}", response_model=TaskRecordResponse)
+async def update_task(
+    task_id: uuid.UUID, body: TaskUpdate, db: AsyncSession = Depends(get_db)
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(task, field, value)
+
+    await db.commit()
+    await db.refresh(task)
+    return task
+
+
+@router.post("/{task_id}/enqueue")
+async def enqueue_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    task.status = "queued"
+    await db.commit()
+    return {
+        "task_id": str(task.id),
+        "priority": task.priority,
+        "queue": _queue_plan(task.priority),
+    }
+
+
+@router.delete("/{task_id}", status_code=204)
+async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await db.delete(task)
+    await db.commit()

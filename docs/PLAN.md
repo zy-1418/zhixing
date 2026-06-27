@@ -36,11 +36,11 @@
 - [x] 工作区 CRUD + 对话分区导出 JSON/Markdown
 - [x] Dify API 代理（创建会话、@引用笔记 ID）
 - [x] 笔记 CRUD（document 模板）
-- [ ] 任务日历 API（对接 tasks 表）
+- [x] 任务日历 API（对接 tasks 表）
 
 ### 1.2 MetaGPT 深度对接
 - [ ] 任务类型映射：研究型/写作型/检索型 → SOP idea 模板
-- [ ] 优先级队列：高→MetaGPT 插队标记；中/低→Redis 延迟队列
+- [x] 优先级队列：高→MetaGPT 插队标记；中/低→Redis 延迟队列
 - [ ] WS 日志转发到 Flutter
 - [ ] QA 失败 → `optimize` 端点重试
 
