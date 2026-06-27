@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from database import engine
 from routers.auth import router as auth_router
+from routers.debates import router as debates_router
 from routers.dify import router as dify_router
 from routers.im import router as im_router
 from routers.notes import router as notes_router
@@ -45,6 +46,7 @@ async def jwt_state_middleware(request, call_next):
 
 
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(debates_router, prefix="/api/v1")
 app.include_router(dify_router, prefix="/api/v1")
 app.include_router(im_router, prefix="/api/v1")
 app.include_router(social_router, prefix="/api/v1")

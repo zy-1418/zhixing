@@ -1,5 +1,7 @@
 from models.base import Base
 from models.conversation import Conversation
+from models.debate import Debate
+from models.debate_comment import DebateComment
 from models.note import Note
 from models.social_post import SocialPost
 from models.social_vote import SocialVote
@@ -16,4 +18,6 @@ __all__ = [
     "Conversation",
     "SocialPost",
     "SocialVote",
+    "Debate",
+    "DebateComment",
 ]
