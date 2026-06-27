@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/api_client.dart';
 import '../../theme/app_theme.dart';
+import 'new_conversation_screen.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   const WorkspaceScreen({super.key});
@@ -77,6 +78,18 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const NewConversationScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add_comment_outlined),
+              label: const Text('新对话 / 导入资料'),
             ),
             const SizedBox(height: 20),
             Expanded(
