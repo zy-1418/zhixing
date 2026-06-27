@@ -85,7 +85,7 @@
 ## P4 — 电商与桌面
 
 - [x] Medusa 对接订单/购物车/钱包
-- [ ] Tauri 或 Flutter desktop 打包
+- [x] Tauri 或 Flutter desktop 打包
 - [ ] 离线缓存（23 篇笔记）
 - [ ] 性能与压测
 
