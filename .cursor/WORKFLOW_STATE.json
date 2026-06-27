@@ -4,7 +4,7 @@
   "loop_limit": 999,
   "mode": "overnight-full",
   "started_at": null,
-  "current_step": "p1-workspace",
+  "current_step": "p1-notes",
   "notes": "Cloud Agent / Hook 共用。每步完成后更新 current_step 与 status。全部 completed 后设 auto_continue=false。",
   "steps": [
     {"id":"p0-docker","phase":"P0","title":"验证 docker-compose","prompt":"知行 P0：cd infra && docker compose config；修复 compose 问题；更新 WORKFLOW_STATE current_step=p0-flutter","status":"completed"},
@@ -13,8 +13,8 @@
 
     {"id":"p1-schema","phase":"P1","title":"PostgreSQL schema","prompt":"知行 P1：services/api 添加 SQLAlchemy models + Alembic：users, notes, workspace_folders, tasks, conversations；step=p1-auth","status":"completed"},
     {"id":"p1-auth","phase":"P1","title":"JWT 鉴权","prompt":"知行 P1：注册/登录 API + JWT middleware；step=p1-workspace","status":"completed"},
-    {"id":"p1-workspace","phase":"P1","title":"工作区 CRUD","prompt":"知行 P1：workspace_folders 树形 API + 对话导出 Markdown/JSON；step=p1-notes","status":"in_progress"},
-    {"id":"p1-notes","phase":"P1","title":"笔记 CRUD","prompt":"知行 P1：notes API document 模板；step=p1-dify-proxy","status":"pending"},
+    {"id":"p1-workspace","phase":"P1","title":"工作区 CRUD","prompt":"知行 P1：workspace_folders 树形 API + 对话导出 Markdown/JSON；step=p1-notes","status":"completed"},
+    {"id":"p1-notes","phase":"P1","title":"笔记 CRUD","prompt":"知行 P1：notes API document 模板；step=p1-dify-proxy","status":"in_progress"},
     {"id":"p1-dify-proxy","phase":"P1","title":"Dify 代理","prompt":"知行 P1：Dify API 代理路由（chat, upload, @引用）；.env DIFY_API_KEY；step=p1-tasks-cal","status":"pending"},
     {"id":"p1-tasks-cal","phase":"P1","title":"任务日历 API","prompt":"知行 P1：tasks 表 + 日历视图 API + Redis 优先级队列骨架；step=p1-metagpt-ws","status":"pending"},
     {"id":"p1-metagpt-ws","phase":"P1","title":"MetaGPT WS 转发","prompt":"知行 P1：WebSocket 代理 MetaGPT 日志到客户端；QA optimize 重试；step=p1-flutter-workspace","status":"pending"},

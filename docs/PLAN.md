@@ -33,7 +33,7 @@
 ### 1.1 后端
 - [x] PostgreSQL schema migration（users, notes, workspace_folders, tasks）
 - [x] JWT 鉴权
-- [ ] 工作区 CRUD + 对话分区导出 JSON/Markdown
+- [x] 工作区 CRUD + 对话分区导出 JSON/Markdown
 - [ ] Dify API 代理（创建会话、@引用笔记 ID）
 - [ ] 笔记 CRUD（document 模板）
 - [ ] 任务日历 API（对接 tasks 表）
