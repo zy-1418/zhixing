@@ -58,7 +58,8 @@ async def health():
 async def stack_info():
     return {
         "project": "zhixing",
-        "phase": "P0",
+        "phase": "P4",
+        "workflow_status": "completed",
         "metagpt_root": settings.metagpt_root,
         "metagpt_x_api": settings.metagpt_x_api,
     }
