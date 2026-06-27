@@ -6,6 +6,7 @@
 - Flutter SDK：当前镜像缺少 `flutter` 命令，移动端以手写 Flutter 五 Tab 壳与占位页面交付；需在本机 Flutter stable 环境运行 `flutter analyze` / `flutter run`。
 - MetaGPT-X：Cloud 环境无法访问宿主机 `127.0.0.1:8000`，`POST /api/v1/tasks/sop` 的真实转发联调需在本机启动 MetaGPT-X 后复验。
 - Dify：Cloud 环境未配置 `DIFY_API_KEY`，Dify 代理路由会返回占位响应；配置自托管或 Cloud Dify Key 后可直接转发 `/chat-messages` 与 `/files/upload`。
+- Neo4j：Cloud 环境缺少 Docker，无法启动 `neo4j:5-community`；图谱抽取 API 先返回占位节点/边，需在本机 compose 环境复验写库。
 
 ## 处理策略
 

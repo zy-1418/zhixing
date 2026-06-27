@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     openim_admin_token: str | None = None
     meili_host: str = "http://127.0.0.1:7700"
     meili_master_key: str = "zhixing_meili_dev_key"
+    neo4j_uri: str = "bolt://127.0.0.1:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "zhixing_graph_dev"
     redis_url: str = "redis://localhost:6379/0"
     metagpt_x_api: str = "http://127.0.0.1:8000"
     metagpt_root: str = r"G:\MetaGPT"

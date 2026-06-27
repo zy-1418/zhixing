@@ -7,7 +7,7 @@
 | **P0** | 仓库脚手架 + MetaGPT Bridge + Hook 自动续跑 | 1 周 | completed |
 | **P1** | MVP：对话/工作区/笔记/任务提交 | 3 周 | completed |
 | **P2** | 社交：广场/好友/工作流编辑器/市场 | 4 周 | completed |
-| **P3** | 知识图谱/AI 小程序/好友 AI 蒸馏 | 4 周 | pending |
+| **P3** | 知识图谱/AI 小程序/好友 AI 蒸馏 | 4 周 | in_progress |
 | **P4** | 电商/桌面端/性能优化 | 3 周 | pending |
 
 ---
@@ -73,7 +73,7 @@
 
 ## P3 — 知识图谱与 AI 小程序
 
-- [ ] Neo4j 笔记关系抽取 pipeline
+- [x] Neo4j 笔记关系抽取 pipeline
 - [ ] sigma.js 图谱 WebView（广场 + DIY 页）
 - [ ] 好友 AI：按用户笔记分库 RAG（Dify + Qdrant）
 - [ ] AI 小程序：Dify Workflow + e2b 沙箱
