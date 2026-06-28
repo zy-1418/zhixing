@@ -23,6 +23,7 @@ def upgrade() -> None:
         "users",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("email", sa.String(length=255), nullable=False),
+        sa.Column("password_hash", sa.String(length=256), nullable=False),
         sa.Column("display_name", sa.String(length=128), nullable=True),
         sa.Column("level", sa.Integer(), nullable=False, server_default="1"),
         sa.Column(
@@ -152,6 +153,14 @@ def upgrade() -> None:
             server_default="pending",
         ),
         sa.Column("metagpt_job_id", sa.String(length=128), nullable=True),
+        sa.Column("due_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column(
+            "metadata",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default="{}",
+        ),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -183,6 +192,12 @@ def upgrade() -> None:
             server_default="新对话",
         ),
         sa.Column("dify_conversation_id", sa.String(length=128), nullable=True),
+        sa.Column(
+            "messages",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default="[]",
+        ),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
