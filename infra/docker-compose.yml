@@ -37,11 +37,23 @@ services:
     volumes:
       - meili_data:/meili_data
 
+  neo4j:
+    image: neo4j:5-community
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/zhixing_dev}
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+
 volumes:
   pg_data:
   redis_data:
   qdrant_data:
   meili_data:
+  neo4j_data:
 
 # Dify 体积大，Phase 1 通过 vendor/dify/docker compose 单独启动
 # MetaGPT-X 在宿主机 G:\MetaGPT 运行，不在此 compose 内

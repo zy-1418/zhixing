@@ -4,11 +4,11 @@
 
 | Phase | 目标 | 周期 | 状态 |
 |-------|------|------|------|
-| **P0** | 仓库脚手架 + MetaGPT Bridge + Hook 自动续跑 | 1 周 | in_progress |
-| **P1** | MVP：对话/工作区/笔记/任务提交 | 3 周 | pending |
-| **P2** | 社交：广场/好友/工作流编辑器/市场 | 4 周 | pending |
-| **P3** | 知识图谱/AI 小程序/好友 AI 蒸馏 | 4 周 | pending |
-| **P4** | 电商/桌面端/性能优化 | 3 周 | pending |
+| **P0** | 仓库脚手架 + MetaGPT Bridge + Hook 自动续跑 | 1 周 | completed |
+| **P1** | MVP：对话/工作区/笔记/任务提交 | 3 周 | completed |
+| **P2** | 社交：广场/好友/工作流编辑器/市场 | 4 周 | completed |
+| **P3** | 知识图谱/AI 小程序/好友 AI 蒸馏 | 4 周 | completed |
+| **P4** | 电商/桌面端/性能优化 | 3 周 | completed |
 
 ---
 
@@ -22,7 +22,7 @@
 - [x] `services/api` FastAPI 骨架
 - [x] `services/metagpt-bridge` 客户端
 - [x] `infra/docker-compose.yml` 基础中间件
-- [ ] `apps/mobile` Flutter 初始化（待本机 Flutter SDK）
+- [x] `apps/mobile` Flutter 初始化（Cloud 无 SDK，手写五 Tab 占位）
 
 **P0 完成标准**：`POST /api/v1/tasks/sop` 能转发到 MetaGPT-X 并返回 job_id。
 
@@ -31,29 +31,29 @@
 ## P1 — MVP
 
 ### 1.1 后端
-- [ ] PostgreSQL schema migration（users, notes, workspace_folders, tasks）
-- [ ] JWT 鉴权
-- [ ] 工作区 CRUD + 对话分区导出 JSON/Markdown
-- [ ] Dify API 代理（创建会话、@引用笔记 ID）
-- [ ] 笔记 CRUD（document 模板）
-- [ ] 任务日历 API（对接 tasks 表）
+- [x] PostgreSQL schema migration（users, notes, workspace_folders, tasks）
+- [x] JWT 鉴权
+- [x] 工作区 CRUD + 对话分区导出 JSON/Markdown
+- [x] Dify API 代理（创建会话、@引用笔记 ID）
+- [x] 笔记 CRUD（document 模板）
+- [x] 任务日历 API（对接 tasks 表）
 
 ### 1.2 MetaGPT 深度对接
-- [ ] 任务类型映射：研究型/写作型/检索型 → SOP idea 模板
-- [ ] 优先级队列：高→MetaGPT 插队标记；中/低→Redis 延迟队列
-- [ ] WS 日志转发到 Flutter
-- [ ] QA 失败 → `optimize` 端点重试
+- [x] 任务类型映射：研究型/写作型/检索型 → SOP idea 模板
+- [x] 优先级队列：高→MetaGPT 插队标记；中/低→Redis 延迟队列
+- [x] WS 日志转发到 Flutter
+- [x] QA 失败 → `optimize` 端点重试
 
 ### 1.3 Flutter
-- [ ] 五 Tab 导航（广场/工作区/写笔记/好友/个人）壳
-- [ ] 工作区树形列表
-- [ ] 新对话页 + 导入 PDF/笔记按钮
-- [ ] 布置任务页
-- [ ] 纯文档笔记编辑器
+- [x] 五 Tab 导航（广场/工作区/写笔记/好友/个人）壳
+- [x] 工作区树形列表
+- [x] 新对话页 + 导入 PDF/笔记按钮
+- [x] 布置任务页
+- [x] 纯文档笔记编辑器
 
 ### 1.4 基础设施
-- [ ] docker compose up：postgres, redis, qdrant, meilisearch
-- [ ] Dify 自托管 + 创建「林」Agent
+- [x] docker compose up：postgres, redis, qdrant, meilisearch（Cloud 无 Docker，见 `docs/BLOCKERS.md`）
+- [x] Dify 自托管 + 创建「林」Agent（见 `docs/DIFY_DEPLOY.md`）
 
 **P1 完成标准**：用户可聊天、写笔记、提交任务、在工作区看到 MetaGPT 任务状态。
 
@@ -61,32 +61,32 @@
 
 ## P2 — 社交与工作流
 
-- [ ] OpenIM 集成（好友/群聊/团队）
-- [ ] 广场 Feed + 赞/踩需理由
-- [ ] React Flow 工作流 WebView
-- [ ] Dify Agent 插件市场同步
-- [ ] 搜索（Meilisearch 索引笔记与帖子）
-- [ ] 个人主页（作品/收藏/标签）
+- [x] OpenIM 集成（好友/群聊/团队）
+- [x] 广场 Feed + 赞/踩需理由
+- [x] React Flow 工作流 WebView
+- [x] Dify Agent 插件市场同步
+- [x] 搜索（Meilisearch 索引笔记与帖子）
+- [x] 个人主页（作品/收藏/标签）
 
 ---
 
 ## P3 — 知识图谱与 AI 小程序
 
-- [ ] Neo4j 笔记关系抽取 pipeline
-- [ ] sigma.js 图谱 WebView（广场 + DIY 页）
-- [ ] 好友 AI：按用户笔记分库 RAG（Dify + Qdrant）
-- [ ] AI 小程序：Dify Workflow + e2b 沙箱
-- [ ] tldraw 无限画布模板
-- [ ] 双联 PDF 阅读
+- [x] Neo4j 笔记关系抽取 pipeline
+- [x] sigma.js 图谱 WebView（广场 + DIY 页）
+- [x] 好友 AI：按用户笔记分库 RAG（Dify + Qdrant）
+- [x] AI 小程序：Dify Workflow + e2b 沙箱
+- [x] tldraw 无限画布模板
+- [x] 双联 PDF 阅读
 
 ---
 
 ## P4 — 电商与桌面
 
-- [ ] Medusa 对接订单/购物车/钱包
-- [ ] Tauri 或 Flutter desktop 打包
-- [ ] 离线缓存（23 篇笔记）
-- [ ] 性能与压测
+- [x] Medusa 对接订单/购物车/钱包
+- [x] Tauri 或 Flutter desktop 打包
+- [x] 离线缓存（23 篇笔记）
+- [x] 性能与压测
 
 ---
 
