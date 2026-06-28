@@ -105,6 +105,17 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@router.get("/friend-ai/personas")
+async def friend_ai_personas(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "user_id": user_id,
+        "qdrant_url": settings.qdrant_url,
+        "items": [],
+        "reason": "Qdrant and Dify are not available in Cursor Cloud; contract is ready.",
+    }
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
