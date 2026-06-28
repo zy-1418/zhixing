@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,6 +29,11 @@ class Task(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     priority: Mapped[str] = mapped_column(String(16), default="medium")
     status: Mapped[str] = mapped_column(String(32), default="pending")
     metagpt_job_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
 
     user: Mapped["User"] = relationship(back_populates="tasks")
     folder: Mapped["WorkspaceFolder | None"] = relationship(back_populates="tasks")
