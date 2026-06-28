@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -80,6 +80,21 @@ async def get_note(note_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     if note is None:
         raise HTTPException(status_code=404, detail="Note not found")
     return note
+
+
+@router.get("/{note_id}/markdown")
+async def export_note_markdown(note_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    note = await db.get(Note, note_id)
+    if note is None:
+        raise HTTPException(status_code=404, detail="Note not found")
+    lines = [f"# {note.title or '未命名笔记'}", ""]
+    for block in note.blocks:
+        if isinstance(block, dict):
+            text = block.get("text") or block.get("content") or block
+        else:
+            text = block
+        lines.extend([str(text), ""])
+    return Response("\n".join(lines), media_type="text/markdown; charset=utf-8")
 
 
 @router.patch("/{note_id}", response_model=NoteResponse)
