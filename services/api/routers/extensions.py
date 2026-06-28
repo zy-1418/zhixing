@@ -46,6 +46,25 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["input", "search", "draft", "review", "archive"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["outline", "draft", "polish", "publish"],
+            },
+        ],
+    }
+
+
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -82,6 +101,7 @@ async def search(q: str):
     }
 
 
+@router.get("/profile/{user_id}")
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -91,6 +111,27 @@ async def profile(user_id: str):
         "collections": [],
         "tags": [],
         "status": "placeholder",
+    }
+
+
+@router.get("/graph/status")
+async def graph_status():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "pipeline": "note-relation-extraction-placeholder",
+        "viewer": "sigma.js-webview",
+    }
+
+
+@router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
+        "reason": "Neo4j is not available in Cursor Cloud; graph contract is ready.",
     }
 
 
@@ -105,6 +146,16 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@router.get("/friend-ai/personas")
+async def friend_ai_personas(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "user_id": user_id,
+        "vector_store": "qdrant-per-user-placeholder",
+        "personas": [],
+    }
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -112,6 +163,17 @@ async def generate_mini_program(body: MiniProgramRequest):
         "prompt": body.prompt,
         "dify_workflow_id": body.dify_workflow_id,
         "sandbox": "e2b-placeholder",
+    }
+
+
+@router.get("/miniprograms/templates")
+async def mini_program_templates():
+    return {
+        "engine": "dify-workflow-e2b-placeholder",
+        "templates": [
+            {"id": "qa-bot", "name": "问答小程序", "inputs": ["prompt", "knowledge"]},
+            {"id": "table-tool", "name": "表格整理小程序", "inputs": ["csv", "goal"]},
+        ],
     }
 
 
@@ -125,12 +187,37 @@ async def canvas_templates():
     }
 
 
+@router.get("/pdf/dual-reader/templates")
+async def dual_pdf_reader_templates():
+    return {
+        "engine": "pdf.js",
+        "templates": [
+            {
+                "id": "dual-column-reader",
+                "name": "双联 PDF 阅读",
+                "panes": ["source-pdf", "notes"],
+            }
+        ],
+    }
+
+
 @router.get("/commerce/status")
 async def commerce_status():
     return {
         "blocked": True,
         "medusa_api_url": settings.medusa_api_url,
         "capabilities": ["orders", "cart", "wallet"],
+    }
+
+
+@router.get("/commerce/cart")
+async def commerce_cart(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "user_id": user_id,
+        "items": [],
+        "wallet": {"balance": 0, "currency": "CNY"},
     }
 
 
