@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extension-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -141,3 +142,102 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_compat():
+    return await openim_status()
+
+
+@compat_router.get("/workflow/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["检索", "初稿", "审查", "校验"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["大纲", "起草", "润色", "校对"],
+            },
+        ],
+    }
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_compat():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_compat(q: str):
+    return await search(q)
+
+
+@compat_router.get("/profiles/{user_id}")
+async def profile_compat(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/knowledge/graph")
+async def knowledge_graph_compat(user_id: str | None = None):
+    return await knowledge_graph(user_id)
+
+
+@compat_router.get("/friend-ai/agents")
+async def friend_ai_agents(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "user_id": user_id,
+        "qdrant_url": settings.qdrant_url,
+        "agents": [],
+        "reason": "Qdrant and Dify are not available in Cursor Cloud.",
+    }
+
+
+@compat_router.post("/mini-programs/generate")
+async def generate_mini_program_compat(body: MiniProgramRequest):
+    return await generate_mini_program(body)
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_compat():
+    return await canvas_templates()
+
+
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+                "layout": "left-pdf-right-notes",
+            }
+        ]
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_compat():
+    return await commerce_status()
+
+
+@compat_router.get("/commerce/cart")
+async def commerce_cart():
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "items": [],
+        "wallet": {"balance": 0, "currency": "CNY"},
+    }
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_compat():
+    return await desktop_status()
