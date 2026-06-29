@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -141,3 +142,117 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_root():
+    return await openim_status()
+
+
+@compat_router.get("/workflow/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["input", "search", "draft", "review", "archive"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["outline", "draft", "polish", "proofread"],
+            },
+        ],
+    }
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_root():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_root(q: str):
+    return await search(q=q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_root(user_id: str):
+    return await profile(user_id=user_id)
+
+
+@compat_router.get("/graph/status")
+async def graph_status():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "pipeline": "note-relation-extraction-placeholder",
+        "ui": "sigma.js-webview",
+    }
+
+
+@compat_router.get("/friend-ai/personas")
+async def friend_ai_personas():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "personas": [
+            {
+                "id": "lin-friend",
+                "name": "好友 AI 蒸馏",
+                "source": "per-user-notes-rag-placeholder",
+            }
+        ],
+    }
+
+
+@compat_router.get("/miniprograms/templates")
+async def miniprogram_templates():
+    return {
+        "runtime": "dify-workflow-e2b-placeholder",
+        "templates": [
+            {"id": "chat-miniapp", "name": "自制对话小程序"},
+            {"id": "workflow-miniapp", "name": "Dify Workflow 小程序"},
+        ],
+    }
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_root():
+    return await canvas_templates()
+
+
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "engine": "pdf.js",
+        "templates": [
+            {
+                "id": "dual-pdf-reader",
+                "name": "双联 PDF 阅读",
+                "panes": ["source-pdf", "notes"],
+            }
+        ],
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_root():
+    return await commerce_status()
+
+
+@compat_router.get("/commerce/cart")
+async def commerce_cart():
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "items": [],
+        "wallet": {"status": "placeholder", "balance": 0},
+    }
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_root():
+    return await desktop_status()
