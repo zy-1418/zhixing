@@ -13,6 +13,7 @@ from routers.notes import router as notes_router
 from routers.social import compat_router as social_compat_router
 from routers.social import router as social_router
 from routers.tasks import router as tasks_router
+from routers.workspace import compat_router as workspace_compat_router
 from routers.workspace import router as workspace_router
 
 
@@ -35,6 +36,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(workspace_router, prefix="/api/v1")
+app.include_router(workspace_compat_router, prefix="/api/v1")
 app.include_router(notes_router, prefix="/api/v1")
 app.include_router(dify_router, prefix="/api/v1")
 app.include_router(social_router, prefix="/api/v1")
