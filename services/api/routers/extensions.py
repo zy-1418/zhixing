@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compatibility_router = APIRouter(tags=["extensions"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -46,6 +47,25 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@compatibility_router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["检索", "初稿", "审查", "校验"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["大纲", "起草", "润色", "校对"],
+            },
+        ],
+    }
+
+
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -60,6 +80,11 @@ async def list_market_agents():
             }
         ],
     }
+
+
+@compatibility_router.get("/market/agents")
+async def list_market_agents_alias():
+    return await list_market_agents()
 
 
 @router.post("/search/index")
@@ -82,6 +107,11 @@ async def search(q: str):
     }
 
 
+@compatibility_router.get("/search")
+async def search_alias(q: str = ""):
+    return await search(q=q)
+
+
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -92,6 +122,11 @@ async def profile(user_id: str):
         "tags": [],
         "status": "placeholder",
     }
+
+
+@compatibility_router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
 
 
 @router.get("/knowledge/graph")
@@ -105,6 +140,25 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@compatibility_router.get("/graph/status")
+async def graph_status():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "pipeline": "note-relation-extraction-placeholder",
+    }
+
+
+@compatibility_router.get("/friend-ai/personas")
+async def friend_ai_personas():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "personas": [],
+        "reason": "Qdrant is not available in Cursor Cloud; contract is ready.",
+    }
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -112,6 +166,19 @@ async def generate_mini_program(body: MiniProgramRequest):
         "prompt": body.prompt,
         "dify_workflow_id": body.dify_workflow_id,
         "sandbox": "e2b-placeholder",
+    }
+
+
+@compatibility_router.get("/miniprograms/templates")
+async def miniprogram_templates():
+    return {
+        "templates": [
+            {
+                "id": "dify-workflow-chat",
+                "name": "Dify Workflow 对话小程序",
+                "sandbox": "e2b-placeholder",
+            }
+        ]
     }
 
 
@@ -125,12 +192,45 @@ async def canvas_templates():
     }
 
 
+@compatibility_router.get("/canvas/templates")
+async def canvas_templates_alias():
+    return await canvas_templates()
+
+
+@compatibility_router.get("/pdf/dual/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf-default",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+            }
+        ]
+    }
+
+
 @router.get("/commerce/status")
 async def commerce_status():
     return {
         "blocked": True,
         "medusa_api_url": settings.medusa_api_url,
         "capabilities": ["orders", "cart", "wallet"],
+    }
+
+
+@compatibility_router.get("/commerce/status")
+async def commerce_status_alias():
+    return await commerce_status()
+
+
+@compatibility_router.get("/commerce/cart")
+async def commerce_cart():
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "items": [],
+        "wallet": {"balance": 0, "currency": "CNY"},
     }
 
 
