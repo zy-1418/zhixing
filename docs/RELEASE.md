@@ -24,6 +24,7 @@
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
 - OpenIM 集成边界文档与状态端点。
 - React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- 补齐移动端/外部集成使用的根级 OpenAPI 兼容契约别名。
 
 ### P3 知识图谱与 AI 小程序
 
