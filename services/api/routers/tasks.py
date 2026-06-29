@@ -315,6 +315,22 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: str, qa_fix_rounds: int = 3):
+    return await optimize_metagpt_job(task_id, qa_fix_rounds=qa_fix_rounds)
+
+
+@router.get("/{task_id}/logs")
+async def task_logs_contract(task_id: str):
+    return {
+        "blocked": True,
+        "task_id": task_id,
+        "stream": f"/api/v1/tasks/{task_id}/logs",
+        "transport": "websocket",
+        "reason": "Use the WebSocket endpoint for live MetaGPT logs.",
+    }
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()
