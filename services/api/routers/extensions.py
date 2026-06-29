@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["compatibility"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -25,6 +26,12 @@ class MiniProgramRequest(BaseModel):
     prompt: str
     dify_workflow_id: str | None = None
     inputs: dict[str, Any] = Field(default_factory=dict)
+
+
+class FriendAIChatRequest(BaseModel):
+    query: str
+    user_id: str | None = None
+    note_collection: str | None = None
 
 
 @router.get("/openim/status")
@@ -141,3 +148,106 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_compat():
+    return await openim_status()
+
+
+@compat_router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["search", "draft", "review", "verify"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["outline", "draft", "polish", "proofread"],
+            },
+        ],
+    }
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_compat():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_compat(q: str):
+    return await search(q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_compat(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
+    }
+
+
+@compat_router.post("/friend-ai/{friend_id}/chat")
+async def friend_ai_chat(friend_id: str, body: FriendAIChatRequest):
+    return {
+        "blocked": True,
+        "friend_id": friend_id,
+        "query": body.query,
+        "user_id": body.user_id,
+        "collection": body.note_collection or f"friend-{friend_id}-notes",
+        "reason": "Qdrant/Dify are not available in Cursor Cloud; contract is ready.",
+    }
+
+
+@compat_router.post("/miniprograms/generate")
+async def generate_miniprogram_compat(body: MiniProgramRequest):
+    return await generate_mini_program(body)
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_compat():
+    return await canvas_templates()
+
+
+@compat_router.get("/pdf/dual")
+async def dual_pdf_template():
+    return {
+        "status": "placeholder",
+        "engine": "pdf.js",
+        "layout": "dual-pane",
+        "features": ["left-source-pdf", "right-notes", "synced-selection"],
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_compat():
+    return await commerce_status()
+
+
+@compat_router.get("/cart")
+async def cart_status():
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "items": [],
+        "currency": "CNY",
+        "reason": "Medusa is not available in Cursor Cloud; cart contract is ready.",
+    }
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_compat():
+    return await desktop_status()
