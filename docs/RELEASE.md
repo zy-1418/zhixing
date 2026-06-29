@@ -8,6 +8,14 @@
 
 ## 已交付
 
+### 最终契约补齐
+
+- OpenAPI 兼容路径补齐至 67 条，覆盖 P0-P4 页面与验收脚本常用入口。
+- 任务 API 增加本地任务详情、QA 重试、日志快照接口：`GET /api/v1/tasks/{task_id}`、`POST /api/v1/tasks/{task_id}/retry`、`GET /api/v1/tasks/{task_id}/logs`。
+- 工作区 API 增加 `/api/v1/workspace/folders/tree` 别名，以及会话 `.json` / `.md` 显式导出路径。
+- 社交 API 增加单数投票别名 `/api/v1/social/posts/{post_id}/vote`，并提供根级结构化辩论入口 `/api/v1/debates/*`。
+- P2-P4 扩展能力同步暴露根级兼容入口：OpenIM、工作流模板、市场、搜索、个人主页、知识图谱、好友 AI、小程序、画布、双联 PDF、电商购物车与桌面端状态。
+
 ### P0-P1 MVP
 
 - FastAPI 网关挂载鉴权、任务、工作区、笔记、Dify 代理路由。
@@ -48,9 +56,18 @@ PYTHONPATH=services/api:services python3 -m compileall services/api services/met
 PYTHONPATH=services/api:services python3 - <<'PY'
 from main import app
 paths = app.openapi()["paths"]
-for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
+for path in [
+    "/health",
+    "/api/v1/auth/register",
+    "/api/v1/tasks/sop",
+    "/api/v1/tasks/{task_id}/retry",
+    "/api/v1/workspace/folders/tree",
+    "/api/v1/debates/{debate_id}",
+    "/api/v1/openim/status",
+    "/api/v1/cart",
+]:
     assert path in paths, path
-print("openapi ok")
+print(f"openapi ok: {len(paths)} paths")
 PY
 ```
 

@@ -105,6 +105,11 @@ async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     return folder
 
 
+@router.get("/folders/tree")
+async def folder_tree_alias(user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)):
+    return await folder_tree(user_id=user_id, db=db)
+
+
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
 async def get_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     folder = await db.get(WorkspaceFolder, folder_id)
@@ -200,6 +205,22 @@ async def create_conversation(
     return conversation
 
 
+@router.get("/conversations/{conversation_id}.json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await _export_conversation(conversation_id, "json", db)
+
+
+@router.get("/conversations/{conversation_id}.md")
+async def export_conversation_markdown_alias(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await _export_conversation(conversation_id, "markdown", db)
+
+
 @router.patch("/conversations/{conversation_id}", response_model=ConversationResponse)
 async def update_conversation(
     conversation_id: uuid.UUID,
@@ -221,6 +242,14 @@ async def export_conversation(
     conversation_id: uuid.UUID,
     format: Literal["json", "markdown"] = Query("markdown"),
     db: AsyncSession = Depends(get_db),
+):
+    return await _export_conversation(conversation_id, format, db)
+
+
+async def _export_conversation(
+    conversation_id: uuid.UUID,
+    format: Literal["json", "markdown"],
+    db: AsyncSession,
 ):
     conversation = await db.get(Conversation, conversation_id)
     if conversation is None:
