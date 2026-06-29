@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -141,3 +142,125 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_alias():
+    return await openim_status()
+
+
+@compat_router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["检索", "初稿", "审查", "校验"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["大纲", "起草", "润色", "校对"],
+            },
+            {
+                "id": "search-sop",
+                "name": "检索型 SOP",
+                "nodes": ["检索", "汇总", "归档"],
+            },
+        ],
+    }
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_alias():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_alias(q: str = ""):
+    return await search(q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/status")
+async def graph_status():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "reason": "Neo4j is not available in Cursor Cloud; graph contract is ready.",
+        "pipelines": ["note-entity-extraction", "relation-upsert"],
+    }
+
+
+@compat_router.get("/friend-ai/personas")
+async def friend_ai_personas():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "personas": [
+            {
+                "id": "lin-default",
+                "name": "林",
+                "rag_collection": "user-notes-placeholder",
+            }
+        ],
+    }
+
+
+@compat_router.get("/miniprograms/templates")
+async def mini_program_templates():
+    return {
+        "sandbox": "e2b-placeholder",
+        "templates": [
+            {
+                "id": "dify-workflow-chat",
+                "name": "Dify Workflow 对话小程序",
+                "inputs": ["prompt", "context"],
+            }
+        ],
+    }
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_alias():
+    return await canvas_templates()
+
+
+@compat_router.get("/pdf/dual/templates")
+async def dual_pdf_templates():
+    return {
+        "engine": "pdf.js",
+        "templates": [
+            {
+                "id": "dual-column-reader",
+                "name": "双联 PDF 阅读",
+                "panes": ["source-pdf", "notes"],
+            }
+        ],
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_alias():
+    return await commerce_status()
+
+
+@compat_router.get("/commerce/cart")
+async def commerce_cart():
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "items": [],
+        "currency_code": "cny",
+    }
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_alias():
+    return await desktop_status()

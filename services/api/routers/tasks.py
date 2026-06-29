@@ -79,6 +79,10 @@ class TaskUpdate(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class TaskRetryRequest(BaseModel):
+    qa_fix_rounds: int = Field(3, ge=1, le=10)
+
+
 class TaskRead(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
@@ -273,6 +277,40 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: str,
+    body: TaskRetryRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    qa_fix_rounds = body.qa_fix_rounds if body else 3
+    job_id = await _resolve_metagpt_job_id(task_id, db)
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        result = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        return {
+            "blocked": True,
+            "task_id": task_id,
+            "metagpt_job_id": job_id,
+            "qa_fix_rounds": qa_fix_rounds,
+            "reason": f"MetaGPT-X optimize unavailable: {e}",
+        }
+    return {"task_id": task_id, "metagpt_job_id": job_id, "result": result}
+
+
+@router.get("/{task_id}/logs")
+async def get_task_logs(task_id: str, db: AsyncSession = Depends(get_db)):
+    job_id = await _resolve_metagpt_job_id(task_id, db)
+    return {
+        "task_id": task_id,
+        "metagpt_job_id": job_id,
+        "blocked": True,
+        "reason": "Use WebSocket /api/v1/tasks/{job_id}/logs for live logs; HTTP history awaits MetaGPT-X artifact storage.",
+        "items": [],
+    }
+
+
 @router.get("/queue")
 async def get_queue():
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
@@ -290,6 +328,18 @@ async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
             "blocked": True,
             "reason": f"MetaGPT-X queue unavailable: {e}",
         }
+
+
+async def _resolve_metagpt_job_id(task_id: str, db: AsyncSession) -> str:
+    try:
+        parsed_task_id = uuid.UUID(task_id)
+    except ValueError:
+        return task_id
+
+    task = await db.get(Task, parsed_task_id)
+    if task is None:
+        return task_id
+    return task.metagpt_job_id or task_id
 
 
 @router.get("/metagpt/{job_id}")
