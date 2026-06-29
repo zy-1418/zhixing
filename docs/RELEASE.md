@@ -36,6 +36,11 @@
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
 
+### 最终 API 兼容契约
+
+- 补齐任务详情、QA retry、工作区树别名、会话 `.json/.md` 导出、广场单数 vote 与根级 debates 路径。
+- 补齐 OpenIM、工作流模板、市场、搜索、个人页、知识图谱、好友 AI、小程序、画布、双联 PDF、电商购物车与桌面状态的根级占位 API。
+
 ## Cloud 降级
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。

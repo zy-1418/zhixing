@@ -279,6 +279,53 @@ async def get_queue():
     return await _queue_status(client)
 
 
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = Query(3, ge=1, le=10),
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task.id),
+            "reason": "Task has no MetaGPT job id to retry.",
+        }
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        result = await client.optimize(task.metagpt_job_id, qa_fix_rounds=qa_fix_rounds)
+        task.status = result.get("status", task.status)
+        task.metadata_ = {
+            **(task.metadata_ or {}),
+            "last_retry": {
+                "at": datetime.utcnow().isoformat(),
+                "qa_fix_rounds": qa_fix_rounds,
+            },
+        }
+        await db.commit()
+        return {"task_id": str(task.id), "metagpt_job_id": task.metagpt_job_id, "result": result}
+    except Exception as e:
+        return {
+            "blocked": True,
+            "task_id": str(task.id),
+            "metagpt_job_id": task.metagpt_job_id,
+            "reason": f"MetaGPT-X optimize unavailable: {e}",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+
+
 async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
     try:
         remote = await client.queue_status()
