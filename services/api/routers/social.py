@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/social", tags=["social"])
+compat_router = APIRouter(tags=["social"])
 
 VoteType = Literal["up", "down"]
 Side = Literal["pro", "con"]
@@ -72,6 +73,7 @@ async def create_post(body: PostCreate):
 
 
 @router.post("/posts/{post_id}/votes", status_code=201)
+@router.post("/post/{post_id}/vote", status_code=201)
 async def vote_post(post_id: str, body: VoteCreate):
     post = _posts.get(post_id)
     if post is None:
@@ -90,6 +92,7 @@ async def vote_post(post_id: str, body: VoteCreate):
 
 
 @router.post("/debates", status_code=201)
+@compat_router.post("/debates", status_code=201)
 async def create_debate(body: DebateCreate):
     debate_id = str(uuid.uuid4())
     debate = {
@@ -105,6 +108,7 @@ async def create_debate(body: DebateCreate):
 
 
 @router.get("/debates/{debate_id}")
+@compat_router.get("/debates/{debate_id}")
 async def get_debate(debate_id: str):
     debate = _debates.get(debate_id)
     if debate is None:
@@ -118,6 +122,7 @@ async def get_debate(debate_id: str):
 
 
 @router.post("/debates/{debate_id}/comments", status_code=201)
+@compat_router.post("/debates/{debate_id}/comments", status_code=201)
 async def add_debate_comment(debate_id: str, body: DebateCommentCreate):
     debate = _debates.get(debate_id)
     if debate is None:

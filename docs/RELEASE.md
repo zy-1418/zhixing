@@ -5,6 +5,7 @@
 - `.cursor/WORKFLOW_STATE.json`：全部步骤 `completed`，`auto_continue=false`。
 - `docs/PLAN.md`：P0-P4 已勾选完成。
 - Cloud 阻塞项：见 `docs/BLOCKERS.md`。
+- 本轮补齐最终验收兼容 API：任务详情/重试/日志快照、工作区树别名、会话 `.json`/`.md` 导出别名，以及 P2-P4 根级占位端点。
 
 ## 已交付
 
