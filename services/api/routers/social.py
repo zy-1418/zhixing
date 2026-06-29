@@ -30,6 +30,10 @@ class VoteCreate(BaseModel):
     reason: str = Field(..., min_length=3, description="赞/踩必须填写理由")
 
 
+class SocialVoteCreate(VoteCreate):
+    post_id: str
+
+
 class DebateCreate(BaseModel):
     post_id: str | None = None
     topic: str = Field(..., min_length=1, max_length=240)
@@ -87,6 +91,16 @@ async def vote_post(post_id: str, body: VoteCreate):
     }
     _votes.append(vote)
     return {"post": post, "vote": vote}
+
+
+@router.post("/vote", status_code=201)
+async def vote_social_post(body: SocialVoteCreate):
+    vote = VoteCreate(
+        user_id=body.user_id,
+        vote_type=body.vote_type,
+        reason=body.reason,
+    )
+    return await vote_post(body.post_id, vote)
 
 
 @router.post("/debates", status_code=201)
