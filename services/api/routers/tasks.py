@@ -79,6 +79,10 @@ class TaskUpdate(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class TaskRetryRequest(BaseModel):
+    qa_fix_rounds: int = Field(3, ge=1, le=10)
+
+
 class TaskRead(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
@@ -271,6 +275,39 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     await db.delete(task)
     await db.commit()
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    body: TaskRetryRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task.id),
+            "reason": "Task has no MetaGPT job id to retry.",
+        }
+
+    retry_body = body or TaskRetryRequest()
+    response = await optimize_metagpt_job(
+        task.metagpt_job_id, qa_fix_rounds=retry_body.qa_fix_rounds
+    )
+    task.status = "queued" if not response.get("blocked") else "blocked"
+    task.metadata_ = {
+        **(task.metadata_ or {}),
+        "last_retry": {
+            "metagpt_job_id": task.metagpt_job_id,
+            "qa_fix_rounds": retry_body.qa_fix_rounds,
+            "response": response,
+        },
+    }
+    await db.commit()
+    return {"task_id": str(task.id), "metagpt_job_id": task.metagpt_job_id, **response}
 
 
 @router.get("/queue")
