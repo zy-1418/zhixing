@@ -248,3 +248,19 @@ async def export_conversation(
         content = message.get("content", "")
         lines.extend([f"## {role}", "", str(content), ""])
     return Response("\n".join(lines), media_type="text/markdown; charset=utf-8")
+
+
+@router.get("/conversations/{conversation_id}/export/json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, format="json", db=db)
+
+
+@router.get("/conversations/{conversation_id}/export/markdown")
+async def export_conversation_markdown(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, format="markdown", db=db)

@@ -16,6 +16,7 @@
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
 - MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- 最终契约兼容路由：任务 retry、会话 JSON/Markdown 显式导出路径。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
@@ -23,18 +24,19 @@
 
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
 - OpenIM 集成边界文档与状态端点。
-- React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- React Flow 工作流模板、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
 
 ### P3 知识图谱与 AI 小程序
 
 - Compose 增加 Neo4j。
-- 知识图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
+- 知识图谱状态、好友 AI persona、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
 
 ### P4 电商与桌面
 
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+- 根路径 API 契约已补齐：`/api/v1/openim/status`、`/api/v1/market/agents`、`/api/v1/search`、`/api/v1/commerce/cart`、`/api/v1/desktop/status` 等可用于前端占位联调。
 
 ## Cloud 降级
 
@@ -48,7 +50,28 @@ PYTHONPATH=services/api:services python3 -m compileall services/api services/met
 PYTHONPATH=services/api:services python3 - <<'PY'
 from main import app
 paths = app.openapi()["paths"]
-for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
+for path in [
+    "/health",
+    "/api/v1/auth/register",
+    "/api/v1/tasks/sop",
+    "/api/v1/tasks/{task_id}/retry",
+    "/api/v1/workspace/conversations/{conversation_id}/export/json",
+    "/api/v1/social/posts/{post_id}/vote",
+    "/api/v1/debates",
+    "/api/v1/openim/status",
+    "/api/v1/workflows/templates",
+    "/api/v1/market/agents",
+    "/api/v1/search",
+    "/api/v1/profile/{user_id}",
+    "/api/v1/graph/status",
+    "/api/v1/friend-ai/personas",
+    "/api/v1/miniprograms/templates",
+    "/api/v1/canvas/templates",
+    "/api/v1/dual-pdf/templates",
+    "/api/v1/commerce/status",
+    "/api/v1/commerce/cart",
+    "/api/v1/desktop/status",
+]:
     assert path in paths, path
 print("openapi ok")
 PY

@@ -79,6 +79,10 @@ class TaskUpdate(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class TaskRetryRequest(BaseModel):
+    qa_fix_rounds: int = Field(3, ge=1, le=10)
+
+
 class TaskRead(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
@@ -271,6 +275,46 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     await db.delete(task)
     await db.commit()
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: str,
+    body: TaskRetryRequest | None = None,
+    qa_fix_rounds: int | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    rounds = qa_fix_rounds or (body.qa_fix_rounds if body else 3)
+    job_id = task_id
+    local_task: Task | None = None
+
+    try:
+        parsed_task_id = uuid.UUID(task_id)
+    except ValueError:
+        parsed_task_id = None
+
+    if parsed_task_id is not None:
+        local_task = await db.get(Task, parsed_task_id)
+        if local_task and local_task.metagpt_job_id:
+            job_id = local_task.metagpt_job_id
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        result = await client.optimize(job_id, qa_fix_rounds=rounds)
+    except Exception as e:
+        return {
+            "blocked": True,
+            "task_id": task_id,
+            "job_id": job_id,
+            "reason": f"MetaGPT-X optimize unavailable: {e}",
+            "qa_fix_rounds": rounds,
+        }
+
+    if local_task is not None:
+        local_task.status = result.get("status", "queued")
+        await db.commit()
+
+    return {"task_id": task_id, "job_id": job_id, "result": result}
 
 
 @router.get("/queue")

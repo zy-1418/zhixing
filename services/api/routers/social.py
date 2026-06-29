@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/social", tags=["social"])
+debates_router = APIRouter(prefix="/debates", tags=["debates"])
 
 VoteType = Literal["up", "down"]
 Side = Literal["pro", "con"]
@@ -89,6 +90,11 @@ async def vote_post(post_id: str, body: VoteCreate):
     return {"post": post, "vote": vote}
 
 
+@router.post("/posts/{post_id}/vote", status_code=201)
+async def vote_post_alias(post_id: str, body: VoteCreate):
+    return await vote_post(post_id, body)
+
+
 @router.post("/debates", status_code=201)
 async def create_debate(body: DebateCreate):
     debate_id = str(uuid.uuid4())
@@ -102,6 +108,16 @@ async def create_debate(body: DebateCreate):
     }
     _debates[debate_id] = debate
     return debate
+
+
+@debates_router.get("")
+async def list_debates():
+    return sorted(_debates.values(), key=lambda item: item["created_at"], reverse=True)
+
+
+@debates_router.post("", status_code=201)
+async def create_root_debate(body: DebateCreate):
+    return await create_debate(body)
 
 
 @router.get("/debates/{debate_id}")
