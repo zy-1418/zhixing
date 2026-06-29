@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -141,3 +142,121 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_alias():
+    return await openim_status()
+
+
+@compat_router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["input", "search", "draft", "review", "archive"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["outline", "draft", "polish", "proofread"],
+            },
+        ],
+    }
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_alias():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_alias(q: str = ""):
+    return await search(q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/status")
+async def graph_status(user_id: str | None = None):
+    graph = await knowledge_graph(user_id=user_id)
+    return {
+        "status": "blocked" if graph["blocked"] else "ready",
+        "engine": "neo4j-sigma-placeholder",
+        **graph,
+    }
+
+
+@compat_router.get("/friend-ai/personas")
+async def friend_ai_personas(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "user_id": user_id,
+        "vector_store": "qdrant-per-user-placeholder",
+        "personas": [
+            {
+                "id": "lin-default",
+                "name": "林",
+                "description": "基于用户笔记分库 RAG 的好友 AI 占位人格。",
+            }
+        ],
+    }
+
+
+@compat_router.get("/miniprograms/templates")
+async def miniprogram_templates():
+    return {
+        "sandbox": "e2b-placeholder",
+        "templates": [
+            {
+                "id": "dify-workflow-chat",
+                "name": "Dify Workflow 对话小程序",
+                "entry": "/extensions/mini-programs/generate",
+            }
+        ],
+    }
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_alias():
+    return await canvas_templates()
+
+
+@compat_router.get("/pdf/dual/templates")
+async def dual_pdf_templates():
+    return {
+        "engine": "pdf.js",
+        "templates": [
+            {
+                "id": "dual-column-reader",
+                "name": "双联 PDF 阅读",
+                "panes": ["source-pdf", "notes"],
+            }
+        ],
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_alias():
+    return await commerce_status()
+
+
+@compat_router.get("/commerce/cart")
+async def commerce_cart():
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "cart": {"items": [], "currency": "CNY", "total": 0},
+        "reason": "Medusa is not available in Cursor Cloud; contract is ready.",
+    }
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_alias():
+    return await desktop_status()

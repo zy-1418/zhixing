@@ -301,6 +301,29 @@ async def get_metagpt_job(job_id: str):
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: str, qa_fix_rounds: int = 3, db: AsyncSession = Depends(get_db)):
+    job_id = task_id
+    try:
+        local_task = await db.get(Task, uuid.UUID(task_id))
+    except ValueError:
+        local_task = None
+    if local_task is not None and local_task.metagpt_job_id:
+        job_id = local_task.metagpt_job_id
+    return await optimize_metagpt_job(job_id, qa_fix_rounds=qa_fix_rounds)
+
+
+@router.get("/{task_id}/logs")
+async def get_task_logs(task_id: str):
+    return {
+        "task_id": task_id,
+        "stream": f"/api/v1/tasks/{task_id}/logs",
+        "transport": "websocket",
+        "blocked": True,
+        "reason": "Use the WebSocket endpoint for live MetaGPT logs; local MetaGPT-X is unavailable in Cursor Cloud.",
+    }
+
+
 @router.post("/metagpt/{job_id}/optimize")
 async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
