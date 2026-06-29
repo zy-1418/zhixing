@@ -5,6 +5,7 @@
 - `.cursor/WORKFLOW_STATE.json`：全部步骤 `completed`，`auto_continue=false`。
 - `docs/PLAN.md`：P0-P4 已勾选完成。
 - Cloud 阻塞项：见 `docs/BLOCKERS.md`。
+- 当前分支补齐最终验收合约路径：任务详情/重试/日志快照、会话 JSON/Markdown 后缀导出、工作区树别名、社交投票别名、根级辩论、OpenIM、工作流模板、市场、搜索、个人主页、图谱、好友 AI、小程序、画布、双联 PDF、电商购物车与桌面状态。
 
 ## 已交付
 

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+contract_router = APIRouter(tags=["final-contract"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -141,3 +142,116 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@contract_router.get("/openim/status")
+async def openim_status_contract():
+    return await openim_status()
+
+
+@contract_router.get("/workflows/templates")
+async def workflow_templates_contract():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["检索", "初稿", "审查", "校验"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["大纲", "起草", "润色", "校对"],
+            },
+        ],
+    }
+
+
+@contract_router.get("/market/agents")
+async def market_agents_contract():
+    return await list_market_agents()
+
+
+@contract_router.get("/search")
+async def search_contract(q: str = ""):
+    return await search(q)
+
+
+@contract_router.get("/profile/{user_id}")
+async def profile_contract(user_id: str):
+    return await profile(user_id)
+
+
+@contract_router.get("/graph/status")
+async def graph_status_contract():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "status": "placeholder",
+        "reason": "Neo4j is not available in Cursor Cloud; contract is ready.",
+    }
+
+
+@contract_router.get("/friend-ai/personas")
+async def friend_ai_personas_contract():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "personas": [],
+        "strategy": "per-user Qdrant collection RAG placeholder",
+    }
+
+
+@contract_router.get("/miniprograms/templates")
+async def miniprogram_templates_contract():
+    return {
+        "templates": [
+            {
+                "id": "dify-workflow-app",
+                "name": "Dify Workflow 小程序",
+                "sandbox": "e2b-placeholder",
+            }
+        ]
+    }
+
+
+@contract_router.get("/canvas/templates")
+async def canvas_templates_contract():
+    return await canvas_templates()
+
+
+@contract_router.get("/dual-pdf/templates")
+async def dual_pdf_templates_contract():
+    return {
+        "templates": [
+            {
+                "id": "dual-column-reader",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+                "layout": "two-pane",
+            }
+        ]
+    }
+
+
+@contract_router.get("/commerce/status")
+async def commerce_status_contract():
+    return await commerce_status()
+
+
+@contract_router.get("/commerce/cart")
+async def commerce_cart_contract(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "user_id": user_id,
+        "items": [],
+        "currency_code": "cny",
+        "total": 0,
+    }
+
+
+@contract_router.get("/desktop/status")
+async def desktop_status_contract():
+    return await desktop_status()
