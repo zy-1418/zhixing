@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import sys
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Optional
 
@@ -313,6 +313,66 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
             "reason": f"MetaGPT-X optimize unavailable: {e}",
             "qa_fix_rounds": qa_fix_rounds,
         }
+
+
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: uuid.UUID, qa_fix_rounds: int = 3, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        task.status = "blocked"
+        task.metadata_ = {
+            **(task.metadata_ or {}),
+            "blocked_reason": "Task has no MetaGPT job id to retry.",
+        }
+        await db.commit()
+        return {
+            "blocked": True,
+            "task_id": str(task.id),
+            "reason": task.metadata_["blocked_reason"],
+        }
+
+    result = await optimize_metagpt_job(task.metagpt_job_id, qa_fix_rounds=qa_fix_rounds)
+    task.metadata_ = {
+        **(task.metadata_ or {}),
+        "last_retry": {
+            "at": datetime.now(UTC).isoformat(),
+            "qa_fix_rounds": qa_fix_rounds,
+            "result": result,
+        },
+    }
+    await db.commit()
+    return {"task_id": str(task.id), "metagpt_job_id": task.metagpt_job_id, "retry": result}
+
+
+@router.get("/{task_id}/logs")
+async def task_log_snapshot(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task.id),
+            "logs": [],
+            "reason": "Task has no MetaGPT job id; WebSocket log stream is unavailable.",
+        }
+    return {
+        "task_id": str(task.id),
+        "metagpt_job_id": task.metagpt_job_id,
+        "logs": [],
+        "stream": f"/api/v1/tasks/{task.metagpt_job_id}/logs",
+        "status": "snapshot-placeholder",
+    }
 
 
 @router.websocket("/{job_id}/logs")
