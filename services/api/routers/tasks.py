@@ -315,6 +315,50 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    job_id = task.metagpt_job_id or str(task.id)
+    retry = await optimize_metagpt_job(job_id, qa_fix_rounds=qa_fix_rounds)
+    task.status = "queued"
+    task.metadata_ = {
+        **(task.metadata_ or {}),
+        "retry_requested_at": datetime.utcnow().isoformat(),
+        "retry_job_id": job_id,
+    }
+    await db.commit()
+    return {"task_id": str(task.id), "metagpt_job_id": job_id, "retry": retry}
+
+
+@router.get("/{task_id}/logs")
+async def get_task_log_snapshot(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {
+        "task_id": str(task.id),
+        "metagpt_job_id": task.metagpt_job_id,
+        "logs": [],
+        "stream": f"/api/v1/tasks/{task.metagpt_job_id or task.id}/logs",
+        "blocked": True,
+        "reason": "MetaGPT-X log stream is only available when the local bridge is running.",
+    }
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()
