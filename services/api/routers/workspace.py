@@ -105,6 +105,13 @@ async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     return folder
 
 
+@router.get("/folders/tree")
+async def folder_tree_alias(
+    user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)
+):
+    return await _folder_tree(user_id=user_id, db=db)
+
+
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
 async def get_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     folder = await db.get(WorkspaceFolder, folder_id)
@@ -142,6 +149,10 @@ async def delete_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)
 
 @router.get("/tree")
 async def folder_tree(user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)):
+    return await _folder_tree(user_id=user_id, db=db)
+
+
+async def _folder_tree(user_id: uuid.UUID, db: AsyncSession):
     result = await db.scalars(
         select(WorkspaceFolder)
         .where(WorkspaceFolder.user_id == user_id)
@@ -248,3 +259,17 @@ async def export_conversation(
         content = message.get("content", "")
         lines.extend([f"## {role}", "", str(content), ""])
     return Response("\n".join(lines), media_type="text/markdown; charset=utf-8")
+
+
+@router.get("/conversations/{conversation_id}/export.json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+):
+    return await export_conversation(conversation_id, format="json", db=db)
+
+
+@router.get("/conversations/{conversation_id}/export.md")
+async def export_conversation_markdown(
+    conversation_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+):
+    return await export_conversation(conversation_id, format="markdown", db=db)
