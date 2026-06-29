@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -27,6 +28,12 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+class CartItemRequest(BaseModel):
+    product_id: str
+    quantity: int = Field(1, ge=1)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -37,12 +44,36 @@ async def openim_status():
     }
 
 
+@compat_router.get("/openim/status")
+async def openim_status_compat():
+    return await openim_status()
+
+
 @router.post("/workflows")
 async def save_workflow(definition: WorkflowDefinition):
     return {
         "status": "saved-placeholder",
         "engine": "react-flow-webview",
         "definition": definition.model_dump(),
+    }
+
+
+@compat_router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["检索", "初稿", "审查", "校验"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["大纲", "起草", "润色", "校对"],
+            },
+        ],
     }
 
 
@@ -60,6 +91,11 @@ async def list_market_agents():
             }
         ],
     }
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_compat():
+    return await list_market_agents()
 
 
 @router.post("/search/index")
@@ -82,6 +118,11 @@ async def search(q: str):
     }
 
 
+@compat_router.get("/search")
+async def search_compat(q: str):
+    return await search(q)
+
+
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -92,6 +133,11 @@ async def profile(user_id: str):
         "tags": [],
         "status": "placeholder",
     }
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_compat(user_id: str):
+    return await profile(user_id)
 
 
 @router.get("/knowledge/graph")
@@ -105,6 +151,28 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@compat_router.get("/graph/status")
+async def graph_status(user_id: str | None = None):
+    graph = await knowledge_graph(user_id=user_id)
+    return {
+        "status": "placeholder",
+        "blocked": graph["blocked"],
+        "neo4j_url": graph["neo4j_url"],
+        "user_id": graph["user_id"],
+    }
+
+
+@compat_router.get("/friend-ai/personas")
+async def friend_ai_personas(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "user_id": user_id,
+        "personas": [],
+        "reason": "Qdrant/Dify are not available in Cursor Cloud; contract is ready.",
+    }
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -112,6 +180,19 @@ async def generate_mini_program(body: MiniProgramRequest):
         "prompt": body.prompt,
         "dify_workflow_id": body.dify_workflow_id,
         "sandbox": "e2b-placeholder",
+    }
+
+
+@compat_router.get("/miniprograms/templates")
+async def miniprogram_templates():
+    return {
+        "templates": [
+            {
+                "id": "dify-workflow-chat",
+                "name": "Dify Workflow 小程序",
+                "sandbox": "e2b-placeholder",
+            }
+        ]
     }
 
 
@@ -125,12 +206,50 @@ async def canvas_templates():
     }
 
 
+@compat_router.get("/canvas/templates")
+async def canvas_templates_compat():
+    return await canvas_templates()
+
+
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"}
+        ]
+    }
+
+
 @router.get("/commerce/status")
 async def commerce_status():
     return {
         "blocked": True,
         "medusa_api_url": settings.medusa_api_url,
         "capabilities": ["orders", "cart", "wallet"],
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_compat():
+    return await commerce_status()
+
+
+@compat_router.get("/cart/items")
+async def list_cart_items(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "user_id": user_id,
+        "items": [],
+    }
+
+
+@compat_router.post("/cart/items", status_code=201)
+async def add_cart_item(body: CartItemRequest):
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "item": body.model_dump(),
     }
 
 
@@ -141,3 +260,8 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_compat():
+    return await desktop_status()

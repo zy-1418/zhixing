@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime
 from typing import Any, Literal, Optional
@@ -14,6 +15,7 @@ from models.conversation import Conversation
 from models.workspace_folder import WorkspaceFolder
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
+compat_router = APIRouter(tags=["workspace-compat"])
 
 FolderType = Literal["portfolio", "miniapp", "workflow", "skills", "conversation"]
 
@@ -103,6 +105,13 @@ async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(folder)
     return folder
+
+
+@router.get("/folders/tree")
+async def folder_tree_alias(
+    user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)
+):
+    return await folder_tree(user_id=user_id, db=db)
 
 
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
@@ -226,9 +235,13 @@ async def export_conversation(
     if conversation is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    if format == "json":
-        import json
+    return _conversation_export_response(conversation, format)
 
+
+def _conversation_export_response(
+    conversation: Conversation, format: Literal["json", "markdown"]
+) -> Response:
+    if format == "json":
         return Response(
             json.dumps(
                 {
@@ -241,10 +254,29 @@ async def export_conversation(
             ),
             media_type="application/json",
         )
-
     lines = [f"# {conversation.title}", ""]
     for message in conversation.messages:
         role = message.get("role", "user")
         content = message.get("content", "")
         lines.extend([f"## {role}", "", str(content), ""])
     return Response("\n".join(lines), media_type="text/markdown; charset=utf-8")
+
+
+@compat_router.get("/conversations/{conversation_id}/export.json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return _conversation_export_response(conversation, "json")
+
+
+@compat_router.get("/conversations/{conversation_id}/export.md")
+async def export_conversation_markdown(
+    conversation_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return _conversation_export_response(conversation, "markdown")
