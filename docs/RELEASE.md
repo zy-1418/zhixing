@@ -16,14 +16,15 @@
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
 - MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- 兼容验收路径：任务详情/重试/日志快照、工作区 `/folders/tree`、会话 `.json`/`.md` 导出别名。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
 ### P2 社交与工作流
 
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
-- OpenIM 集成边界文档与状态端点。
-- React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- OpenIM 集成边界文档与状态端点，保留 `/api/v1/openim/status` 兼容路径。
+- React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点与根级兼容路径。
 
 ### P3 知识图谱与 AI 小程序
 
@@ -35,6 +36,15 @@
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+
+## 本次自动化验收
+
+- `python3 -m pip install -r services/api/requirements.txt`
+- `PYTHONPATH=services/api:services python3 -m compileall services/api services/metagpt_bridge`
+- OpenAPI 必需路径检查通过：61 条路径，缺失 0 条。
+- FastAPI TestClient 静态别名匹配检查通过，确认 `/workspace/folders/tree` 未被 UUID 动态路由遮挡。
+- `.cursor/WORKFLOW_STATE.json`：32 个步骤全部 `completed`，`current_step=p4-final`，`auto_continue=false`。
+- `git diff --check`
 
 ## Cloud 降级
 
