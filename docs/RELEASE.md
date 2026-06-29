@@ -24,17 +24,20 @@
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
 - OpenIM 集成边界文档与状态端点。
 - React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- 补齐移动端/旧客户端兼容路径：`/api/v1/debates`、`/api/v1/workflows/templates`、`/api/v1/market/agents`、`/api/v1/search`、`/api/v1/profile/{user_id}`。
 
 ### P3 知识图谱与 AI 小程序
 
 - Compose 增加 Neo4j。
 - 知识图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
+- 补齐 `/api/v1/graph/status`、`/api/v1/friend-ai/personas`、`/api/v1/miniprograms/templates`、`/api/v1/canvas/templates`、`/api/v1/pdf/dual/templates` 占位契约。
 
 ### P4 电商与桌面
 
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+- 补齐 `/api/v1/commerce/status` 与 `/api/v1/commerce/cart` 根级兼容契约。
 
 ## Cloud 降级
 
