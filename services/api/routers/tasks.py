@@ -279,6 +279,65 @@ async def get_queue():
     return await _queue_status(client)
 
 
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    job_id = task.metagpt_job_id or str(task.id)
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        result = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        result = {
+            "blocked": True,
+            "job_id": job_id,
+            "reason": f"MetaGPT-X optimize unavailable: {e}",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+
+    task.status = "queued" if not result.get("blocked") else "blocked"
+    task.metadata_ = {
+        **(task.metadata_ or {}),
+        "last_retry": {
+            "job_id": job_id,
+            "qa_fix_rounds": qa_fix_rounds,
+            "result": result,
+        },
+    }
+    await db.commit()
+    return {"task_id": str(task.id), "metagpt_job_id": job_id, "retry": result}
+
+
+@router.get("/{task_id}/logs")
+async def task_log_snapshot(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    job_id = task.metagpt_job_id or str(task.id)
+    return {
+        "task_id": str(task.id),
+        "metagpt_job_id": job_id,
+        "blocked": True,
+        "reason": "Live logs are available through the WebSocket route; Cloud snapshot is a placeholder.",
+        "lines": [],
+    }
+
+
 async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
     try:
         remote = await client.queue_status()
