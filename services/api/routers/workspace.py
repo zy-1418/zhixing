@@ -14,6 +14,7 @@ from models.conversation import Conversation
 from models.workspace_folder import WorkspaceFolder
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
+compat_router = APIRouter(tags=["workspace-compat"])
 
 FolderType = Literal["portfolio", "miniapp", "workflow", "skills", "conversation"]
 
@@ -248,3 +249,28 @@ async def export_conversation(
         content = message.get("content", "")
         lines.extend([f"## {role}", "", str(content), ""])
     return Response("\n".join(lines), media_type="text/markdown; charset=utf-8")
+
+
+@compat_router.get("/conversations/{conversation_id}/export")
+async def export_conversation_alias(
+    conversation_id: uuid.UUID,
+    format: Literal["json", "markdown"] = Query("markdown"),
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, format, db)
+
+
+@compat_router.get("/conversations/{conversation_id}/export.json")
+async def export_conversation_json_alias(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, "json", db)
+
+
+@compat_router.get("/conversations/{conversation_id}/export.md")
+async def export_conversation_markdown_alias(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, "markdown", db)
