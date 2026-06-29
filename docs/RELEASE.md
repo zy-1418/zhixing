@@ -5,6 +5,7 @@
 - `.cursor/WORKFLOW_STATE.json`：全部步骤 `completed`，`auto_continue=false`。
 - `docs/PLAN.md`：P0-P4 已勾选完成。
 - Cloud 阻塞项：见 `docs/BLOCKERS.md`。
+- 本次收尾补齐最终 OpenAPI 兼容路径：工作区 `/folders/tree`、会话 `.json/.md` 导出、任务 retry、广场单数 vote。
 
 ## 已交付
 
@@ -53,6 +54,8 @@ for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/d
 print("openapi ok")
 PY
 ```
+
+本次 Cloud 验证已通过：`compileall`、workflow/PLAN/RELEASE/BLOCKERS 一致性、30 个核心 OpenAPI 路径存在性检查、`git diff --check`。
 
 本机具备 Docker/Flutter 后继续执行：
 
