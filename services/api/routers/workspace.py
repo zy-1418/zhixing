@@ -105,6 +105,11 @@ async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     return folder
 
 
+@router.get("/folders/tree")
+async def folder_tree_alias(user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)):
+    return await folder_tree(user_id=user_id, db=db)
+
+
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
 async def get_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     folder = await db.get(WorkspaceFolder, folder_id)
@@ -226,6 +231,35 @@ async def export_conversation(
     if conversation is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
+    return _render_conversation_export(conversation, format)
+
+
+@router.get("/conversations/{conversation_id}/export.json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return _render_conversation_export(conversation, "json")
+
+
+@router.get("/conversations/{conversation_id}/export.md")
+async def export_conversation_markdown(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return _render_conversation_export(conversation, "markdown")
+
+
+def _render_conversation_export(
+    conversation: Conversation,
+    format: Literal["json", "markdown"],
+) -> Response:
     if format == "json":
         import json
 

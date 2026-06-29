@@ -16,6 +16,7 @@
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
 - MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- 补齐任务详情、QA 重试与日志快照 HTTP 契约，便于 OpenAPI 验收。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
@@ -24,17 +25,20 @@
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
 - OpenIM 集成边界文档与状态端点。
 - React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- 补齐根级兼容路径：`/api/v1/debates`、`/api/v1/openim/status`、`/api/v1/workflow/templates`、`/api/v1/market/agents`、`/api/v1/search`、`/api/v1/profile/{user_id}`。
 
 ### P3 知识图谱与 AI 小程序
 
 - Compose 增加 Neo4j。
 - 知识图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
+- 补齐 `/api/v1/graph/notes/{note_id}`、`/api/v1/friend-ai/agents`、`/api/v1/miniprograms`、`/api/v1/canvas/templates`、`/api/v1/dual-pdf/templates` 兼容接口。
 
 ### P4 电商与桌面
 
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+- 补齐 `/api/v1/commerce/status`、`/api/v1/commerce/cart`、`/api/v1/desktop/status` 兼容接口。
 
 ## Cloud 降级
 
