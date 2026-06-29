@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compatibility_router = APIRouter(tags=["compatibility"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -27,6 +28,7 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+@compatibility_router.get("/openim/status")
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -37,6 +39,27 @@ async def openim_status():
     }
 
 
+@compatibility_router.get("/workflows/templates")
+@router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["检索", "初稿", "审查", "校验"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["大纲", "起草", "润色", "校对"],
+            },
+        ],
+    }
+
+
+@compatibility_router.post("/workflows")
 @router.post("/workflows")
 async def save_workflow(definition: WorkflowDefinition):
     return {
@@ -46,6 +69,7 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@compatibility_router.get("/market/agents")
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -62,6 +86,7 @@ async def list_market_agents():
     }
 
 
+@compatibility_router.post("/search/index")
 @router.post("/search/index")
 async def index_documents(body: SearchIndexRequest):
     return {
@@ -72,6 +97,7 @@ async def index_documents(body: SearchIndexRequest):
     }
 
 
+@compatibility_router.get("/search")
 @router.get("/search")
 async def search(q: str):
     return {
@@ -82,6 +108,7 @@ async def search(q: str):
     }
 
 
+@compatibility_router.get("/profiles/{user_id}")
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -94,6 +121,7 @@ async def profile(user_id: str):
     }
 
 
+@compatibility_router.get("/knowledge/graph")
 @router.get("/knowledge/graph")
 async def knowledge_graph(user_id: str | None = None):
     return {
@@ -105,6 +133,19 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@compatibility_router.get("/friend-ai/status")
+@router.get("/friend-ai/status")
+async def friend_ai_status(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "user_id": user_id,
+        "qdrant_url": settings.qdrant_url,
+        "collections": [],
+        "reason": "Qdrant/Dify are not available in Cursor Cloud; API contract is ready.",
+    }
+
+
+@compatibility_router.post("/miniprograms/generate")
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -115,6 +156,7 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@compatibility_router.get("/canvas/templates")
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -125,6 +167,22 @@ async def canvas_templates():
     }
 
 
+@compatibility_router.get("/dual-pdf/templates")
+@router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "engine": "pdf.js",
+        "templates": [
+            {
+                "id": "dual-pdf-study",
+                "name": "双联 PDF 阅读",
+                "panes": ["pdf", "notes"],
+            }
+        ],
+    }
+
+
+@compatibility_router.get("/commerce/status")
 @router.get("/commerce/status")
 async def commerce_status():
     return {
@@ -134,6 +192,19 @@ async def commerce_status():
     }
 
 
+@compatibility_router.get("/cart")
+@router.get("/commerce/cart")
+async def cart_status(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "user_id": user_id,
+        "items": [],
+        "wallet": {"balance": 0, "currency": "CNY"},
+        "reason": "Medusa is not available in Cursor Cloud; API contract is ready.",
+    }
+
+
+@compatibility_router.get("/desktop/status")
 @router.get("/desktop/status")
 async def desktop_status():
     return {
