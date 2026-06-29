@@ -216,11 +216,8 @@ async def update_conversation(
     return conversation
 
 
-@router.get("/conversations/{conversation_id}/export")
-async def export_conversation(
-    conversation_id: uuid.UUID,
-    format: Literal["json", "markdown"] = Query("markdown"),
-    db: AsyncSession = Depends(get_db),
+async def _export_conversation_response(
+    conversation_id: uuid.UUID, format: Literal["json", "markdown"], db: AsyncSession
 ):
     conversation = await db.get(Conversation, conversation_id)
     if conversation is None:
@@ -248,3 +245,28 @@ async def export_conversation(
         content = message.get("content", "")
         lines.extend([f"## {role}", "", str(content), ""])
     return Response("\n".join(lines), media_type="text/markdown; charset=utf-8")
+
+
+@router.get("/conversations/{conversation_id}/export")
+async def export_conversation(
+    conversation_id: uuid.UUID,
+    format: Literal["json", "markdown"] = Query("markdown"),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _export_conversation_response(conversation_id, format, db)
+
+
+@router.get("/conversations/{conversation_id}/export/json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await _export_conversation_response(conversation_id, "json", db)
+
+
+@router.get("/conversations/{conversation_id}/export/markdown")
+async def export_conversation_markdown(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await _export_conversation_response(conversation_id, "markdown", db)
