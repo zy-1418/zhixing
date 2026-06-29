@@ -14,6 +14,7 @@ from models.conversation import Conversation
 from models.workspace_folder import WorkspaceFolder
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
+compat_router = APIRouter(tags=["workspace-compat"])
 
 FolderType = Literal["portfolio", "miniapp", "workflow", "skills", "conversation"]
 
@@ -103,6 +104,11 @@ async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(folder)
     return folder
+
+
+@router.get("/folders/tree")
+async def folder_tree_alias(user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)):
+    return await folder_tree(user_id=user_id, db=db)
 
 
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
@@ -248,3 +254,21 @@ async def export_conversation(
         content = message.get("content", "")
         lines.extend([f"## {role}", "", str(content), ""])
     return Response("\n".join(lines), media_type="text/markdown; charset=utf-8")
+
+
+@compat_router.get("/conversations/{conversation_id}.json")
+@router.get("/conversations/{conversation_id}.json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, format="json", db=db)
+
+
+@compat_router.get("/conversations/{conversation_id}.md")
+@router.get("/conversations/{conversation_id}.md")
+async def export_conversation_markdown(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, format="markdown", db=db)
