@@ -315,6 +315,41 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+@router.get("/{task_id}")
+async def get_task(task_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        local_id = uuid.UUID(task_id)
+    except ValueError:
+        local_id = None
+
+    if local_id is not None:
+        task = await db.get(Task, local_id)
+        if task is not None:
+            return TaskRead.model_validate(task).model_dump(mode="json", by_alias=True)
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        return await client.get_project(task_id)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: str, qa_fix_rounds: int = Query(3), db: AsyncSession = Depends(get_db)):
+    job_id = task_id
+    try:
+        local_id = uuid.UUID(task_id)
+    except ValueError:
+        local_id = None
+
+    if local_id is not None:
+        task = await db.get(Task, local_id)
+        if task is not None and task.metagpt_job_id:
+            job_id = task.metagpt_job_id
+
+    return await optimize_metagpt_job(job_id, qa_fix_rounds=qa_fix_rounds)
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()

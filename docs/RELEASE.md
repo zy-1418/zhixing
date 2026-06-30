@@ -5,6 +5,7 @@
 - `.cursor/WORKFLOW_STATE.json`：全部步骤 `completed`，`auto_continue=false`。
 - `docs/PLAN.md`：P0-P4 已勾选完成。
 - Cloud 阻塞项：见 `docs/BLOCKERS.md`。
+- 最终验收兼容路径已补齐，P1-P4 关键能力同时暴露稳定的 `/api/v1/*` 根级入口。
 
 ## 已交付
 
@@ -35,6 +36,12 @@
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+
+### 最终验收兼容入口
+
+- 任务详情与重试：`/api/v1/tasks/{task_id}`、`/api/v1/tasks/{task_id}/retry`。
+- 工作区树、会话导出、笔记尾斜杠与社交投票别名。
+- P2-P4 根级占位端点：工作流、市场、搜索、主页、图谱、好友 AI、小程序、画布、双联 PDF、电商、桌面端、OpenIM。
 
 ## Cloud 降级
 

@@ -89,6 +89,11 @@ async def vote_post(post_id: str, body: VoteCreate):
     return {"post": post, "vote": vote}
 
 
+@router.post("/post/{post_id}/vote", status_code=201)
+async def vote_post_alias(post_id: str, body: VoteCreate):
+    return await vote_post(post_id, body)
+
+
 @router.post("/debates", status_code=201)
 async def create_debate(body: DebateCreate):
     debate_id = str(uuid.uuid4())
