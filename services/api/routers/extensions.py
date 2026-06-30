@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -136,6 +137,103 @@ async def commerce_status():
 
 @router.get("/desktop/status")
 async def desktop_status():
+    return {
+        "status": "placeholder",
+        "targets": ["flutter-desktop", "tauri"],
+        "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_alias():
+    return await openim_status()
+
+
+@compat_router.get("/workflows")
+async def list_workflows():
+    return {
+        "engine": "react-flow-webview",
+        "items": [],
+        "status": "placeholder",
+    }
+
+
+@compat_router.post("/workflows")
+async def save_workflow_alias(definition: WorkflowDefinition):
+    return await save_workflow(definition)
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_alias():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_alias(q: str):
+    return await search(q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
+    }
+
+
+@compat_router.get("/friend-ai/profiles")
+async def friend_ai_profiles():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "items": [],
+        "status": "placeholder",
+    }
+
+
+@compat_router.get("/miniprograms")
+async def list_miniprograms():
+    return {
+        "blocked": not bool(settings.dify_api_key),
+        "engine": "Dify Workflow + e2b-placeholder",
+        "items": [],
+    }
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_alias():
+    return await canvas_templates()
+
+
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"}
+        ]
+    }
+
+
+@compat_router.get("/commerce/cart")
+async def commerce_cart():
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "items": [],
+        "wallet": {"balance": 0, "currency": "CNY"},
+    }
+
+
+@compat_router.get("/desktop/builds")
+async def desktop_builds():
     return {
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
