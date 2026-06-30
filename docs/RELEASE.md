@@ -36,6 +36,11 @@
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
 
+### 最终验收兼容合约
+
+- 补齐根级 P2-P4 API 兼容路径：`/api/v1/debates/`、`/api/v1/market/agents`、`/api/v1/search/`、`/api/v1/profile/{user_id}`、`/api/v1/graph/status`、`/api/v1/friend-ai/profiles`、`/api/v1/miniprograms/`、`/api/v1/canvas/templates`、`/api/v1/dual-pdf/templates`、`/api/v1/commerce/status`、`/api/v1/desktop/status`。
+- 补齐 MVP 路由别名：`/api/v1/workspace/folders/tree`、`/api/v1/notes/`、`/api/v1/tasks/{task_id}`、`/api/v1/tasks/{task_id}/retry`、`/api/v1/social/post/{post_id}/vote`。
+
 ## Cloud 降级
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。

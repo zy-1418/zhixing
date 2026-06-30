@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extension-compatibility"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -28,6 +29,7 @@ class MiniProgramRequest(BaseModel):
 
 
 @router.get("/openim/status")
+@compat_router.get("/openim/status")
 async def openim_status():
     return {
         "service": "OpenIM",
@@ -38,6 +40,7 @@ async def openim_status():
 
 
 @router.post("/workflows")
+@compat_router.post("/workflows")
 async def save_workflow(definition: WorkflowDefinition):
     return {
         "status": "saved-placeholder",
@@ -47,6 +50,7 @@ async def save_workflow(definition: WorkflowDefinition):
 
 
 @router.get("/market/agents")
+@compat_router.get("/market/agents")
 async def list_market_agents():
     return {
         "blocked": not bool(settings.dify_api_key),
@@ -73,6 +77,8 @@ async def index_documents(body: SearchIndexRequest):
 
 
 @router.get("/search")
+@compat_router.get("/search")
+@compat_router.get("/search/")
 async def search(q: str):
     return {
         "query": q,
@@ -83,6 +89,7 @@ async def search(q: str):
 
 
 @router.get("/profiles/{user_id}")
+@compat_router.get("/profile/{user_id}")
 async def profile(user_id: str):
     return {
         "user_id": user_id,
@@ -95,6 +102,7 @@ async def profile(user_id: str):
 
 
 @router.get("/knowledge/graph")
+@compat_router.get("/graph/status")
 async def knowledge_graph(user_id: str | None = None):
     return {
         "blocked": True,
@@ -105,7 +113,19 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@compat_router.get("/friend-ai/profiles")
+async def friend_ai_profiles(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "user_id": user_id,
+        "profiles": [],
+        "reason": "Qdrant is not available in Cursor Cloud; contract is ready.",
+    }
+
+
 @router.post("/mini-programs/generate")
+@compat_router.post("/miniprograms/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
         "status": "placeholder",
@@ -115,7 +135,18 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@compat_router.get("/miniprograms/")
+@compat_router.get("/miniprograms")
+async def list_mini_programs():
+    return {
+        "items": [],
+        "blocked": True,
+        "reason": "Dify Workflow and e2b sandbox are not available in Cursor Cloud.",
+    }
+
+
 @router.get("/canvas/templates")
+@compat_router.get("/canvas/templates")
 async def canvas_templates():
     return {
         "templates": [
@@ -125,7 +156,22 @@ async def canvas_templates():
     }
 
 
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+                "status": "placeholder",
+            }
+        ]
+    }
+
+
 @router.get("/commerce/status")
+@compat_router.get("/commerce/status")
 async def commerce_status():
     return {
         "blocked": True,
@@ -135,6 +181,7 @@ async def commerce_status():
 
 
 @router.get("/desktop/status")
+@compat_router.get("/desktop/status")
 async def desktop_status():
     return {
         "status": "placeholder",

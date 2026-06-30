@@ -141,6 +141,7 @@ async def delete_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)
 
 
 @router.get("/tree")
+@router.get("/folders/tree")
 async def folder_tree(user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)):
     result = await db.scalars(
         select(WorkspaceFolder)
