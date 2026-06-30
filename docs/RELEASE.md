@@ -36,6 +36,12 @@
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
 
+### 最终 API 兼容层
+
+- 补齐 P2-P4 前端与验收脚本使用的短路径别名，包括市场、搜索、个人页、图谱、好友 AI、小程序、画布、双联 PDF、电商、桌面端、OpenIM 与工作流模板。
+- 补齐任务详情、QA 重试与日志快照占位接口，保留 MetaGPT-X 不可达时的 blocked 响应。
+- 补齐工作区 `/folders/tree` 与笔记尾斜杠列表路径，避免客户端路由契约不一致。
+
 ## Cloud 降级
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。
@@ -48,9 +54,18 @@ PYTHONPATH=services/api:services python3 -m compileall services/api services/met
 PYTHONPATH=services/api:services python3 - <<'PY'
 from main import app
 paths = app.openapi()["paths"]
-for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
+for path in [
+    "/health",
+    "/api/v1/auth/register",
+    "/api/v1/tasks/sop",
+    "/api/v1/tasks/{task_id}/retry",
+    "/api/v1/workspace/folders/tree",
+    "/api/v1/market/agents",
+    "/api/v1/graph/notes/{note_id}",
+    "/api/v1/commerce/status",
+]:
     assert path in paths, path
-print("openapi ok")
+print(f"openapi ok: {len(paths)} paths")
 PY
 ```
 

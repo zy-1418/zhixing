@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/social", tags=["social"])
+compat_router = APIRouter(tags=["social-compat"])
 
 VoteType = Literal["up", "down"]
 Side = Literal["pro", "con"]
@@ -89,6 +90,11 @@ async def vote_post(post_id: str, body: VoteCreate):
     return {"post": post, "vote": vote}
 
 
+@router.post("/posts/{post_id}/vote", status_code=201)
+async def vote_post_singular(post_id: str, body: VoteCreate):
+    return await vote_post(post_id, body)
+
+
 @router.post("/debates", status_code=201)
 async def create_debate(body: DebateCreate):
     debate_id = str(uuid.uuid4())
@@ -132,3 +138,24 @@ async def add_debate_comment(debate_id: str, body: DebateCommentCreate):
     }
     debate["comments"].append(comment)
     return comment
+
+
+@compat_router.get("/debates")
+async def list_debates():
+    debates = list(_debates.values())
+    return sorted(debates, key=lambda item: item["created_at"], reverse=True)
+
+
+@compat_router.post("/debates", status_code=201)
+async def create_debate_alias(body: DebateCreate):
+    return await create_debate(body)
+
+
+@compat_router.get("/debates/{debate_id}")
+async def get_debate_alias(debate_id: str):
+    return await get_debate(debate_id)
+
+
+@compat_router.post("/debates/{debate_id}/comments", status_code=201)
+async def add_debate_comment_alias(debate_id: str, body: DebateCommentCreate):
+    return await add_debate_comment(debate_id, body)
