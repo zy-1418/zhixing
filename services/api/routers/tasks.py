@@ -279,6 +279,11 @@ async def get_queue():
     return await _queue_status(client)
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: uuid.UUID, qa_fix_rounds: int = 3):
+    return await optimize_metagpt_job(str(task_id), qa_fix_rounds=qa_fix_rounds)
+
+
 async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
     try:
         remote = await client.queue_status()
