@@ -74,6 +74,20 @@ async def create_note(body: NoteCreate, db: AsyncSession = Depends(get_db)):
     return note
 
 
+@router.get("/", response_model=list[NoteResponse])
+async def list_notes_slash(
+    user_id: uuid.UUID = Query(...),
+    folder_id: Optional[uuid.UUID] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    return await list_notes(user_id=user_id, folder_id=folder_id, db=db)
+
+
+@router.post("/", response_model=NoteResponse, status_code=201)
+async def create_note_slash(body: NoteCreate, db: AsyncSession = Depends(get_db)):
+    return await create_note(body, db=db)
+
+
 @router.get("/{note_id}", response_model=NoteResponse)
 async def get_note(note_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     note = await db.get(Note, note_id)

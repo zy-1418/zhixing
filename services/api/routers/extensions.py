@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["compatibility"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -141,3 +142,129 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_root():
+    return await openim_status()
+
+
+@compat_router.get("/workflow/templates")
+async def workflow_templates_root():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["input", "search", "draft", "review", "archive"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["outline", "draft", "polish", "proofread"],
+            },
+        ],
+    }
+
+
+@compat_router.post("/workflows")
+async def save_workflow_root(definition: WorkflowDefinition):
+    return await save_workflow(definition)
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_root():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_root(q: str = ""):
+    return await search(q)
+
+
+@compat_router.post("/search/index")
+async def index_documents_root(body: SearchIndexRequest):
+    return await index_documents(body)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_root(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/status")
+async def graph_status_root():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "engine": "neo4j-sigma-placeholder",
+    }
+
+
+@compat_router.get("/knowledge/graph")
+async def knowledge_graph_root(user_id: str | None = None):
+    return await knowledge_graph(user_id)
+
+
+@compat_router.get("/friend-ai/status")
+async def friend_ai_status_root():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "capabilities": ["per-user-rag", "friend-ai-switch"],
+    }
+
+
+@compat_router.get("/miniprograms/status")
+async def miniprograms_status_root():
+    return {
+        "blocked": not bool(settings.dify_api_key),
+        "engine": "dify-workflow-e2b-placeholder",
+        "capabilities": ["generate", "run-in-sandbox"],
+    }
+
+
+@compat_router.get("/mini-programs/status")
+async def mini_programs_status_root():
+    return await miniprograms_status_root()
+
+
+@compat_router.post("/mini-programs/generate")
+async def generate_mini_program_root(body: MiniProgramRequest):
+    return await generate_mini_program(body)
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_root():
+    return await canvas_templates()
+
+
+@compat_router.get("/pdf/dual-viewer")
+async def dual_pdf_viewer_root():
+    return {
+        "status": "placeholder",
+        "engine": "pdf.js",
+        "layout": "dual-column",
+        "supported_sources": ["workspace-file", "uploaded-pdf"],
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_root():
+    return await commerce_status()
+
+
+@compat_router.get("/cart")
+async def cart_root():
+    return {
+        "blocked": True,
+        "medusa_api_url": settings.medusa_api_url,
+        "items": [],
+        "wallet": {"balance": 0, "currency": "CNY"},
+    }
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_root():
+    return await desktop_status()

@@ -90,6 +90,11 @@ async def list_folders(
     return result.all()
 
 
+@router.get("/folders/tree")
+async def folder_tree_alias(user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)):
+    return await folder_tree(user_id=user_id, db=db)
+
+
 @router.post("/folders", response_model=FolderResponse, status_code=201)
 async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     folder = WorkspaceFolder(
@@ -248,3 +253,19 @@ async def export_conversation(
         content = message.get("content", "")
         lines.extend([f"## {role}", "", str(content), ""])
     return Response("\n".join(lines), media_type="text/markdown; charset=utf-8")
+
+
+@router.get("/conversations/{conversation_id}.json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, format="json", db=db)
+
+
+@router.get("/conversations/{conversation_id}.md")
+async def export_conversation_markdown(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await export_conversation(conversation_id, format="markdown", db=db)
