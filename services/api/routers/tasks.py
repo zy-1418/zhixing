@@ -273,6 +273,11 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: uuid.UUID, qa_fix_rounds: int = 3):
+    return await optimize_metagpt_job(str(task_id), qa_fix_rounds=qa_fix_rounds)
+
+
 @router.get("/queue")
 async def get_queue():
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
