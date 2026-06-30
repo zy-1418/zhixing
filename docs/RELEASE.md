@@ -22,8 +22,8 @@
 ### P2 社交与工作流
 
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
-- OpenIM 集成边界文档与状态端点。
-- React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- OpenIM 集成边界文档与根级状态端点，兼容旧 `/extensions/openim/status` 路径。
+- React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点，并提供根级兼容路径。
 
 ### P3 知识图谱与 AI 小程序
 
@@ -35,6 +35,29 @@
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+
+## 最终 API 兼容契约
+
+为便于 Flutter、WebView 与后续自动验收使用，后端同时保留模块化路径与根级兼容路径：
+
+- `/api/v1/tasks/{task_id}` 与 `/api/v1/tasks/{task_id}/retry`
+- `/api/v1/workspace/folders/tree`
+- `/api/v1/workspace/conversations/{conversation_id}/export.json`
+- `/api/v1/workspace/conversations/{conversation_id}/export.md`
+- `/api/v1/notes/`
+- `/api/v1/debates/`
+- `/api/v1/openim/status`
+- `/api/v1/workflows/templates`
+- `/api/v1/market/agents`
+- `/api/v1/search`
+- `/api/v1/profiles/{user_id}`
+- `/api/v1/knowledge/graph`
+- `/api/v1/friend-ai/personas`
+- `/api/v1/mini-programs/generate`
+- `/api/v1/canvas/templates`
+- `/api/v1/dual-pdf/templates`
+- `/api/v1/commerce/status`
+- `/api/v1/desktop/status`
 
 ## Cloud 降级
 
