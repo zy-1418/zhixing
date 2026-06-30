@@ -5,6 +5,7 @@
 - `.cursor/WORKFLOW_STATE.json`：全部步骤 `completed`，`auto_continue=false`。
 - `docs/PLAN.md`：P0-P4 已勾选完成。
 - Cloud 阻塞项：见 `docs/BLOCKERS.md`。
+- 最终验收兼容路径已补齐：工作区树、会话导出、任务 retry、辩论、工作流、市场、搜索、个人主页、图谱、好友 AI、小程序、画布、双联 PDF、电商、桌面端、OpenIM。
 
 ## 已交付
 
