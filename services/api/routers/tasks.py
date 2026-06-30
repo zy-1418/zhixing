@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import sys
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Optional
 
@@ -277,6 +277,52 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 async def get_queue():
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
     return await _queue_status(client)
+
+
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task_id),
+            "reason": "Task has no bound MetaGPT job to retry.",
+        }
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        result = await client.optimize(task.metagpt_job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        return {
+            "blocked": True,
+            "task_id": str(task_id),
+            "job_id": task.metagpt_job_id,
+            "reason": f"MetaGPT-X optimize unavailable: {e}",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+
+    task.status = "queued"
+    task.metadata_ = {
+        **(task.metadata_ or {}),
+        "retry_requested_at": datetime.now(UTC).isoformat(),
+        "retry_result": result,
+    }
+    await db.commit()
+    return {"task_id": str(task_id), "job_id": task.metagpt_job_id, "result": result}
 
 
 async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
