@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -140,4 +141,100 @@ async def desktop_status():
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_root():
+    return await openim_status()
+
+
+@compat_router.post("/workflows/definition")
+async def save_workflow_definition(definition: WorkflowDefinition):
+    return await save_workflow(definition=definition)
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_root():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_root(q: str):
+    return await search(q=q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_root(user_id: str):
+    return await profile(user_id=user_id)
+
+
+@compat_router.get("/graph/status")
+async def graph_status(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "user_id": user_id,
+        "nodes_indexed": 0,
+        "edges_indexed": 0,
+    }
+
+
+@compat_router.get("/friend-ai/agents")
+async def friend_ai_agents(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "user_id": user_id,
+        "agents": [],
+        "reason": "Qdrant and Dify are not available in Cursor Cloud.",
+    }
+
+
+@compat_router.get("/miniprograms")
+async def list_miniprograms():
+    return {
+        "blocked": not bool(settings.dify_api_key),
+        "items": [],
+        "sandbox": "e2b-placeholder",
+    }
+
+
+@compat_router.post("/miniprograms")
+async def create_miniprogram(body: MiniProgramRequest):
+    return await generate_mini_program(body=body)
+
+
+@compat_router.get("/canvas/template")
+async def canvas_template():
+    return {
+        "id": "tldraw-blank",
+        "name": "无限画布",
+        "engine": "tldraw",
+        "webview_route": "/assets/canvas/index.html",
+    }
+
+
+@compat_router.get("/dual-pdf/template")
+async def dual_pdf_template():
+    return {
+        "id": "dual-pdf",
+        "name": "双联 PDF 阅读",
+        "engine": "pdf.js",
+        "webview_route": "/assets/pdf/dual.html",
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_root():
+    return await commerce_status()
+
+
+@compat_router.get("/desktop/build-plan")
+async def desktop_build_plan():
+    return {
+        "status": "placeholder",
+        "targets": ["flutter-desktop", "tauri"],
+        "scripts": ["scripts/build-desktop.sh"],
+        "blocked": "Flutter SDK is not available in Cursor Cloud.",
     }
