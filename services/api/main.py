@@ -7,6 +7,7 @@ from config import settings
 from database import engine
 from routers.auth import router as auth_router
 from routers.dify import router as dify_router
+from routers.extensions import compat_router as extensions_compat_router
 from routers.extensions import router as extensions_router
 from routers.notes import router as notes_router
 from routers.social import router as social_router
@@ -36,6 +37,7 @@ app.include_router(workspace_router, prefix="/api/v1")
 app.include_router(notes_router, prefix="/api/v1")
 app.include_router(dify_router, prefix="/api/v1")
 app.include_router(social_router, prefix="/api/v1")
+app.include_router(extensions_compat_router, prefix="/api/v1")
 app.include_router(extensions_router, prefix="/api/v1")
 
 
