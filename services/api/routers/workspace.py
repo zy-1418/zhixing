@@ -105,6 +105,13 @@ async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     return folder
 
 
+@router.get("/folders/tree")
+async def folder_tree_alias(
+    user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)
+):
+    return await folder_tree(user_id=user_id, db=db)
+
+
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
 async def get_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     folder = await db.get(WorkspaceFolder, folder_id)
@@ -227,21 +234,51 @@ async def export_conversation(
         raise HTTPException(status_code=404, detail="Conversation not found")
 
     if format == "json":
-        import json
+        return _conversation_json_response(conversation)
 
-        return Response(
-            json.dumps(
-                {
-                    "id": str(conversation.id),
-                    "title": conversation.title,
-                    "messages": conversation.messages,
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
-            media_type="application/json",
-        )
+    return _conversation_markdown_response(conversation)
 
+
+@router.get("/conversations/{conversation_id}/export.json")
+async def export_conversation_json(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return _conversation_json_response(conversation)
+
+
+@router.get("/conversations/{conversation_id}/export.md")
+async def export_conversation_markdown(
+    conversation_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return _conversation_markdown_response(conversation)
+
+
+def _conversation_json_response(conversation: Conversation) -> Response:
+    import json
+
+    return Response(
+        json.dumps(
+            {
+                "id": str(conversation.id),
+                "title": conversation.title,
+                "messages": conversation.messages,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        media_type="application/json",
+    )
+
+
+def _conversation_markdown_response(conversation: Conversation) -> Response:
     lines = [f"# {conversation.title}", ""]
     for message in conversation.messages:
         role = message.get("role", "user")

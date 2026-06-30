@@ -1,6 +1,6 @@
 # OpenIM 集成设计
 
-Phase 2 将 OpenIM 用于好友、群聊与团队协作。当前仓库提供 API 契约与 Flutter 入口，占位端点为 `GET /api/v1/extensions/openim/status`。
+Phase 2 将 OpenIM 用于好友、群聊与团队协作。当前仓库提供 API 契约与 Flutter 入口，占位端点为 `GET /api/v1/openim/status`，并保留旧路径 `GET /api/v1/extensions/openim/status` 作为兼容别名。
 
 ## 边界
 

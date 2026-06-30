@@ -5,6 +5,7 @@
 - `.cursor/WORKFLOW_STATE.json`：全部步骤 `completed`，`auto_continue=false`。
 - `docs/PLAN.md`：P0-P4 已勾选完成。
 - Cloud 阻塞项：见 `docs/BLOCKERS.md`。
+- 最终 OpenAPI 兼容契约已补齐：保留旧路径的同时暴露根级扩展端点、任务重试、工作区导出和 notes 尾斜杠别名。
 
 ## 已交付
 
@@ -24,17 +25,20 @@
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
 - OpenIM 集成边界文档与状态端点。
 - React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- 根级兼容路径覆盖 `/openim/status`、`/workflows/templates`、`/market/agents`、`/search`、`/profile/{user_id}` 与 `/debates/`。
 
 ### P3 知识图谱与 AI 小程序
 
 - Compose 增加 Neo4j。
 - 知识图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
+- 根级兼容路径覆盖 `/graph/notes/{note_id}`、`/friend-ai/profiles/{user_id}`、`/miniprograms/workflows`、`/canvas/templates` 与 `/dual-pdf/templates`。
 
 ### P4 电商与桌面
 
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+- 根级兼容路径覆盖 `/commerce/status` 与 `/desktop/builds`。
 
 ## Cloud 降级
 
@@ -48,7 +52,29 @@ PYTHONPATH=services/api:services python3 -m compileall services/api services/met
 PYTHONPATH=services/api:services python3 - <<'PY'
 from main import app
 paths = app.openapi()["paths"]
-for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
+for path in [
+    "/health",
+    "/api/v1/auth/register",
+    "/api/v1/tasks/sop",
+    "/api/v1/tasks/{task_id}/retry",
+    "/api/v1/workspace/folders/tree",
+    "/api/v1/workspace/conversations/{conversation_id}/export.json",
+    "/api/v1/notes/",
+    "/api/v1/social/posts/{post_id}/vote",
+    "/api/v1/debates/",
+    "/api/v1/openim/status",
+    "/api/v1/workflows/templates",
+    "/api/v1/market/agents",
+    "/api/v1/search",
+    "/api/v1/profile/{user_id}",
+    "/api/v1/graph/notes/{note_id}",
+    "/api/v1/friend-ai/profiles/{user_id}",
+    "/api/v1/miniprograms/workflows",
+    "/api/v1/canvas/templates",
+    "/api/v1/dual-pdf/templates",
+    "/api/v1/commerce/status",
+    "/api/v1/desktop/builds",
+]:
     assert path in paths, path
 print("openapi ok")
 PY
