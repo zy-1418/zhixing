@@ -16,6 +16,7 @@
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
 - MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- 兼容路径覆盖任务详情/重试/日志快照、工作区树别名、会话 `.json`/`.md` 导出别名。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
@@ -23,16 +24,16 @@
 
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
 - OpenIM 集成边界文档与状态端点。
-- React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点，并提供 `/api/v1` 根级兼容别名。
 
 ### P3 知识图谱与 AI 小程序
 
 - Compose 增加 Neo4j。
-- 知识图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
+- 知识图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点和状态占位。
 
 ### P4 电商与桌面
 
-- Medusa 订单/购物车/钱包代理状态端点。
+- Medusa 订单/购物车/钱包代理状态端点与购物车占位契约。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
 
@@ -48,7 +49,17 @@ PYTHONPATH=services/api:services python3 -m compileall services/api services/met
 PYTHONPATH=services/api:services python3 - <<'PY'
 from main import app
 paths = app.openapi()["paths"]
-for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
+for path in [
+    "/health",
+    "/api/v1/auth/register",
+    "/api/v1/tasks/sop",
+    "/api/v1/workspace/folders/tree",
+    "/api/v1/dify/chat",
+    "/api/v1/social/posts",
+    "/api/v1/debates",
+    "/api/v1/search",
+    "/api/v1/cart",
+]:
     assert path in paths, path
 print("openapi ok")
 PY
