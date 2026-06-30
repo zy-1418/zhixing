@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extension-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -27,6 +28,7 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+@compat_router.get("/openim/status")
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -34,6 +36,26 @@ async def openim_status():
         "status": "placeholder",
         "docs": "docs/OPENIM.md",
         "capabilities": ["friends", "groups", "team-chat"],
+    }
+
+
+@compat_router.get("/workflows/templates")
+@router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["input", "search", "draft", "review", "archive"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["outline", "draft", "polish", "proofread"],
+            },
+        ],
     }
 
 
@@ -46,6 +68,7 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@compat_router.get("/market/agents")
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -72,6 +95,8 @@ async def index_documents(body: SearchIndexRequest):
     }
 
 
+@compat_router.get("/search/")
+@compat_router.get("/search")
 @router.get("/search")
 async def search(q: str):
     return {
@@ -82,6 +107,7 @@ async def search(q: str):
     }
 
 
+@compat_router.get("/profile/{user_id}")
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -91,6 +117,16 @@ async def profile(user_id: str):
         "collections": [],
         "tags": [],
         "status": "placeholder",
+    }
+
+
+@compat_router.get("/graph/status")
+@router.get("/graph/status")
+async def graph_status():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "pipeline": "note-relation-extraction-placeholder",
     }
 
 
@@ -105,6 +141,26 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@compat_router.get("/friend-ai/status")
+@router.get("/friend-ai/status")
+async def friend_ai_status():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "mode": "per-user-rag-placeholder",
+    }
+
+
+@compat_router.get("/miniprograms/status")
+@router.get("/miniprograms/status")
+async def miniprograms_status():
+    return {
+        "blocked": True,
+        "workflow": "dify-workflow-placeholder",
+        "sandbox": "e2b-placeholder",
+    }
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -115,6 +171,7 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@compat_router.get("/canvas/templates")
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -125,6 +182,22 @@ async def canvas_templates():
     }
 
 
+@compat_router.get("/dual-pdf/templates")
+@router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf-default",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+                "layout": "source-and-notes",
+            }
+        ]
+    }
+
+
+@compat_router.get("/commerce/status")
 @router.get("/commerce/status")
 async def commerce_status():
     return {
@@ -134,6 +207,7 @@ async def commerce_status():
     }
 
 
+@compat_router.get("/desktop/status")
 @router.get("/desktop/status")
 async def desktop_status():
     return {
