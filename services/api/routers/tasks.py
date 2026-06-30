@@ -247,6 +247,52 @@ async def task_calendar(
     return result.all()
 
 
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = Query(3, ge=1, le=10),
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task.id),
+            "reason": "Task has no MetaGPT job id yet.",
+        }
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        remote = await client.optimize(task.metagpt_job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        remote = {
+            "blocked": True,
+            "job_id": task.metagpt_job_id,
+            "reason": f"MetaGPT-X optimize unavailable: {e}",
+        }
+
+    task.metadata_ = {
+        **(task.metadata_ or {}),
+        "last_retry": {
+            "qa_fix_rounds": qa_fix_rounds,
+            "result": remote,
+            "requested_at": datetime.utcnow().isoformat(),
+        },
+    }
+    await db.commit()
+    return {"task_id": str(task.id), "metagpt_job_id": task.metagpt_job_id, "remote": remote}
+
+
 @router.patch("/{task_id}", response_model=TaskRead)
 async def update_task(
     task_id: uuid.UUID, body: TaskUpdate, db: AsyncSession = Depends(get_db)
