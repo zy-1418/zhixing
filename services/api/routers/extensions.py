@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -141,3 +142,94 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_compat():
+    return await openim_status()
+
+
+@compat_router.get("/workflows")
+async def list_workflows_compat():
+    return {
+        "status": "placeholder",
+        "engine": "react-flow-webview",
+        "items": [],
+    }
+
+
+@compat_router.post("/workflows")
+async def save_workflow_compat(definition: WorkflowDefinition):
+    return await save_workflow(definition)
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_compat():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_compat(q: str = ""):
+    return await search(q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_compat(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/status")
+async def graph_status_compat():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "pipeline": "note-relation-extraction-placeholder",
+        "webview": "sigma.js",
+    }
+
+
+@compat_router.get("/friend-ai/status")
+async def friend_ai_status_compat():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "strategy": "per-user-collection-rag-placeholder",
+    }
+
+
+@compat_router.get("/miniprograms/status")
+async def miniprograms_status_compat():
+    return {
+        "blocked": not bool(settings.dify_api_key),
+        "engine": "Dify Workflow + e2b-placeholder",
+        "items": [],
+    }
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_compat():
+    return await canvas_templates()
+
+
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates_compat():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+                "layout": "two-pane",
+            }
+        ]
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_compat():
+    return await commerce_status()
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_compat():
+    return await desktop_status()
