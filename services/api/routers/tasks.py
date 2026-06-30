@@ -315,6 +315,52 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+async def _resolve_metagpt_job_id(task_id: str, db: AsyncSession) -> str:
+    try:
+        local_id = uuid.UUID(task_id)
+    except ValueError:
+        return task_id
+
+    task = await db.get(Task, local_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task.metagpt_job_id or str(task.id)
+
+
+@router.get("/{task_id}")
+async def get_task(task_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        local_id = uuid.UUID(task_id)
+    except ValueError:
+        return await get_metagpt_job(task_id)
+
+    task = await db.get(Task, local_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return TaskRead.model_validate(task).model_dump(mode="json", by_alias=True)
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: str,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    job_id = await _resolve_metagpt_job_id(task_id, db)
+    return await optimize_metagpt_job(job_id, qa_fix_rounds=qa_fix_rounds)
+
+
+@router.get("/{task_id}/logs")
+async def task_log_snapshot(task_id: str, db: AsyncSession = Depends(get_db)):
+    job_id = await _resolve_metagpt_job_id(task_id, db)
+    return {
+        "job_id": job_id,
+        "stream": f"/api/v1/tasks/{job_id}/logs",
+        "blocked": True,
+        "reason": "Use the WebSocket endpoint for live MetaGPT-X logs.",
+    }
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()
