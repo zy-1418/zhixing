@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -27,6 +28,27 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+@router.get("/workflows/templates")
+@compat_router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["collect", "draft", "review", "archive"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["outline", "draft", "polish", "proofread"],
+            },
+        ],
+    }
+
+
+@compat_router.get("/openim/status")
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -37,6 +59,7 @@ async def openim_status():
     }
 
 
+@compat_router.post("/workflows")
 @router.post("/workflows")
 async def save_workflow(definition: WorkflowDefinition):
     return {
@@ -46,6 +69,7 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@compat_router.get("/market/agents")
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -62,6 +86,7 @@ async def list_market_agents():
     }
 
 
+@compat_router.post("/search/index")
 @router.post("/search/index")
 async def index_documents(body: SearchIndexRequest):
     return {
@@ -72,6 +97,7 @@ async def index_documents(body: SearchIndexRequest):
     }
 
 
+@compat_router.get("/search")
 @router.get("/search")
 async def search(q: str):
     return {
@@ -82,6 +108,7 @@ async def search(q: str):
     }
 
 
+@compat_router.get("/profile/{user_id}")
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -91,6 +118,17 @@ async def profile(user_id: str):
         "collections": [],
         "tags": [],
         "status": "placeholder",
+    }
+
+
+@compat_router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [{"id": note_id, "label": "note", "type": "note"}],
+        "edges": [],
     }
 
 
@@ -105,6 +143,28 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@compat_router.get("/friend-ai/profiles/{user_id}")
+async def friend_ai_profile(user_id: str):
+    return {
+        "blocked": True,
+        "user_id": user_id,
+        "vector_store": "qdrant-placeholder",
+        "capabilities": ["note-rag", "friend-context-switch"],
+    }
+
+
+@compat_router.get("/miniprograms")
+async def mini_programs():
+    return {
+        "blocked": not bool(settings.dify_api_key),
+        "items": [],
+        "workflow_engine": "dify-workflow-placeholder",
+        "sandbox": "e2b-placeholder",
+    }
+
+
+@compat_router.post("/miniprograms")
+@compat_router.post("/mini-programs/generate")
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -115,6 +175,7 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@compat_router.get("/canvas/templates")
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -125,6 +186,21 @@ async def canvas_templates():
     }
 
 
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+                "layout": "two-column",
+            }
+        ]
+    }
+
+
+@compat_router.get("/commerce/status")
 @router.get("/commerce/status")
 async def commerce_status():
     return {
@@ -134,6 +210,7 @@ async def commerce_status():
     }
 
 
+@compat_router.get("/desktop/status")
 @router.get("/desktop/status")
 async def desktop_status():
     return {

@@ -45,6 +45,7 @@ class NoteResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+@router.get("/", response_model=list[NoteResponse])
 @router.get("", response_model=list[NoteResponse])
 async def list_notes(
     user_id: uuid.UUID = Query(...),
@@ -59,6 +60,7 @@ async def list_notes(
     return result.all()
 
 
+@router.post("/", response_model=NoteResponse, status_code=201)
 @router.post("", response_model=NoteResponse, status_code=201)
 async def create_note(body: NoteCreate, db: AsyncSession = Depends(get_db)):
     note = Note(
