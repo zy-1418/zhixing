@@ -292,6 +292,35 @@ async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
         }
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task_id),
+            "reason": "Task has no MetaGPT job id to retry.",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+    retry = await _optimize_job(task.metagpt_job_id, qa_fix_rounds)
+    task.metadata_ = {
+        **(task.metadata_ or {}),
+        "last_retry": {
+            "qa_fix_rounds": qa_fix_rounds,
+            "result": retry,
+            "created_at": datetime.utcnow().isoformat(),
+        },
+    }
+    await db.commit()
+    return {"task_id": str(task_id), "metagpt_job_id": task.metagpt_job_id, "retry": retry}
+
+
 @router.get("/metagpt/{job_id}")
 async def get_metagpt_job(job_id: str):
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
@@ -303,6 +332,10 @@ async def get_metagpt_job(job_id: str):
 
 @router.post("/metagpt/{job_id}/optimize")
 async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
+    return await _optimize_job(job_id, qa_fix_rounds)
+
+
+async def _optimize_job(job_id: str, qa_fix_rounds: int) -> dict[str, Any]:
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
     try:
         return await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
