@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -27,6 +28,7 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+@compat_router.get("/openim/status")
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -37,6 +39,7 @@ async def openim_status():
     }
 
 
+@compat_router.post("/workflows")
 @router.post("/workflows")
 async def save_workflow(definition: WorkflowDefinition):
     return {
@@ -46,6 +49,7 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@compat_router.get("/market/agents")
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -63,6 +67,7 @@ async def list_market_agents():
 
 
 @router.post("/search/index")
+@compat_router.post("/search/index")
 async def index_documents(body: SearchIndexRequest):
     return {
         "status": "accepted-placeholder",
@@ -72,6 +77,7 @@ async def index_documents(body: SearchIndexRequest):
     }
 
 
+@compat_router.get("/search")
 @router.get("/search")
 async def search(q: str):
     return {
@@ -82,6 +88,7 @@ async def search(q: str):
     }
 
 
+@compat_router.get("/profile/{user_id}")
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -94,6 +101,7 @@ async def profile(user_id: str):
     }
 
 
+@compat_router.get("/graph")
 @router.get("/knowledge/graph")
 async def knowledge_graph(user_id: str | None = None):
     return {
@@ -105,6 +113,18 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@compat_router.get("/friend-ai/{user_id}")
+async def friend_ai_profile(user_id: str):
+    return {
+        "user_id": user_id,
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "status": "placeholder",
+        "collections": [f"friend_ai_{user_id}"],
+    }
+
+
+@compat_router.post("/miniprograms/generate")
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -115,6 +135,7 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@compat_router.get("/canvas/templates")
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -125,6 +146,17 @@ async def canvas_templates():
     }
 
 
+@compat_router.get("/dual-pdf/viewer")
+async def dual_pdf_viewer():
+    return {
+        "status": "placeholder",
+        "engine": "pdf.js",
+        "layout": "dual-column",
+        "features": ["left-pdf", "right-notes", "sync-scroll-placeholder"],
+    }
+
+
+@compat_router.get("/commerce/status")
 @router.get("/commerce/status")
 async def commerce_status():
     return {
@@ -134,6 +166,7 @@ async def commerce_status():
     }
 
 
+@compat_router.get("/desktop/status")
 @router.get("/desktop/status")
 async def desktop_status():
     return {
