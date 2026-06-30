@@ -5,6 +5,7 @@
 - `.cursor/WORKFLOW_STATE.json`：全部步骤 `completed`，`auto_continue=false`。
 - `docs/PLAN.md`：P0-P4 已勾选完成。
 - Cloud 阻塞项：见 `docs/BLOCKERS.md`。
+- 本分支补齐最终验收兼容路径：任务详情/重试、工作区树、笔记尾斜杠、社交单数投票，以及 P2-P4 根级扩展 API。
 
 ## 已交付
 
@@ -35,6 +36,14 @@
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+
+### 最终 API 兼容契约
+
+- `/api/v1/tasks/{task_id}` 与 `/api/v1/tasks/{task_id}/retry` 对接本地任务记录和 MetaGPT optimize 占位。
+- `/api/v1/workspace/folders/tree`、`/api/v1/notes/`、`/api/v1/social/post/{post_id}/vote` 保持移动端兼容。
+- `/api/v1/debates`、`/api/v1/workflows`、`/api/v1/market/agents`、`/api/v1/search`、`/api/v1/profile/{user_id}` 提供 P2 根级入口。
+- `/api/v1/graph/notes/{note_id}`、`/api/v1/friend-ai/{friend_id}`、`/api/v1/miniprograms/generate`、`/api/v1/canvas/templates/tldraw`、`/api/v1/dual-pdf/templates/default` 提供 P3 占位契约。
+- `/api/v1/commerce/status`、`/api/v1/desktop/build-targets`、`/api/v1/openim/status` 暴露 P4/社交依赖状态。
 
 ## Cloud 降级
 

@@ -315,6 +315,47 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task.id),
+            "reason": "Task has no MetaGPT job id yet.",
+        }
+
+    retry = await optimize_metagpt_job(task.metagpt_job_id, qa_fix_rounds)
+    task.status = "blocked" if retry.get("blocked") else "queued"
+    task.metadata_ = {
+        **(task.metadata_ or {}),
+        "last_retry": retry,
+        "qa_fix_rounds": qa_fix_rounds,
+    }
+    await db.commit()
+    await db.refresh(task)
+    return {
+        "task_id": str(task.id),
+        "metagpt_job_id": task.metagpt_job_id,
+        "status": task.status,
+        "retry": retry,
+    }
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()

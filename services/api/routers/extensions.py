@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -37,6 +38,11 @@ async def openim_status():
     }
 
 
+@compat_router.get("/openim/status")
+async def openim_status_alias():
+    return await openim_status()
+
+
 @router.post("/workflows")
 async def save_workflow(definition: WorkflowDefinition):
     return {
@@ -44,6 +50,20 @@ async def save_workflow(definition: WorkflowDefinition):
         "engine": "react-flow-webview",
         "definition": definition.model_dump(),
     }
+
+
+@compat_router.get("/workflows")
+async def list_workflows():
+    return {
+        "engine": "react-flow-webview",
+        "items": [],
+        "status": "placeholder",
+    }
+
+
+@compat_router.post("/workflows")
+async def save_workflow_alias(definition: WorkflowDefinition):
+    return await save_workflow(definition)
 
 
 @router.get("/market/agents")
@@ -62,6 +82,11 @@ async def list_market_agents():
     }
 
 
+@compat_router.get("/market/agents")
+async def list_market_agents_alias():
+    return await list_market_agents()
+
+
 @router.post("/search/index")
 async def index_documents(body: SearchIndexRequest):
     return {
@@ -72,6 +97,11 @@ async def index_documents(body: SearchIndexRequest):
     }
 
 
+@compat_router.post("/search/index")
+async def index_documents_alias(body: SearchIndexRequest):
+    return await index_documents(body)
+
+
 @router.get("/search")
 async def search(q: str):
     return {
@@ -80,6 +110,11 @@ async def search(q: str):
         "reason": "Meilisearch is not available in Cursor Cloud; contract is ready.",
         "items": [],
     }
+
+
+@compat_router.get("/search")
+async def search_alias(q: str):
+    return await search(q)
 
 
 @router.get("/profiles/{user_id}")
@@ -94,6 +129,11 @@ async def profile(user_id: str):
     }
 
 
+@compat_router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
 @router.get("/knowledge/graph")
 async def knowledge_graph(user_id: str | None = None):
     return {
@@ -102,6 +142,28 @@ async def knowledge_graph(user_id: str | None = None):
         "user_id": user_id,
         "nodes": [],
         "edges": [],
+    }
+
+
+@compat_router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
+    }
+
+
+@compat_router.get("/friend-ai/{friend_id}")
+async def friend_ai(friend_id: str):
+    return {
+        "blocked": True,
+        "friend_id": friend_id,
+        "qdrant_url": settings.qdrant_url,
+        "reason": "Per-user Qdrant collections require local services.",
+        "capabilities": ["rag-chat", "note-distillation"],
     }
 
 
@@ -115,6 +177,11 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@compat_router.post("/miniprograms/generate")
+async def generate_miniprogram_alias(body: MiniProgramRequest):
+    return await generate_mini_program(body)
+
+
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -122,6 +189,27 @@ async def canvas_templates():
             {"id": "tldraw-blank", "name": "无限画布", "engine": "tldraw"},
             {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"},
         ]
+    }
+
+
+@compat_router.get("/canvas/templates/tldraw")
+async def tldraw_canvas_template():
+    return {
+        "id": "tldraw-blank",
+        "name": "无限画布",
+        "engine": "tldraw",
+        "status": "placeholder",
+    }
+
+
+@compat_router.get("/dual-pdf/templates/default")
+async def dual_pdf_template():
+    return {
+        "id": "dual-pdf-default",
+        "name": "双联 PDF 阅读",
+        "engine": "pdf.js",
+        "layout": "two-pane",
+        "status": "placeholder",
     }
 
 
@@ -134,8 +222,22 @@ async def commerce_status():
     }
 
 
+@compat_router.get("/commerce/status")
+async def commerce_status_alias():
+    return await commerce_status()
+
+
 @router.get("/desktop/status")
 async def desktop_status():
+    return {
+        "status": "placeholder",
+        "targets": ["flutter-desktop", "tauri"],
+        "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@compat_router.get("/desktop/build-targets")
+async def desktop_build_targets():
     return {
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
