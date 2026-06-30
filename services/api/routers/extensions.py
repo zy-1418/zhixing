@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extension-compatibility"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -27,6 +28,12 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+class FriendAIChatRequest(BaseModel):
+    message: str
+    user_id: str | None = None
+    note_collection: str | None = None
+
+
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -43,6 +50,30 @@ async def save_workflow(definition: WorkflowDefinition):
         "status": "saved-placeholder",
         "engine": "react-flow-webview",
         "definition": definition.model_dump(),
+    }
+
+
+@router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "templates": [
+            {
+                "id": "research",
+                "name": "研究型工作流",
+                "nodes": ["search", "draft", "review", "verify"],
+            },
+            {
+                "id": "writing",
+                "name": "写作型工作流",
+                "nodes": ["outline", "draft", "polish", "proofread"],
+            },
+            {
+                "id": "search",
+                "name": "检索型工作流",
+                "nodes": ["retrieve", "summarize", "archive"],
+            },
+        ],
+        "engine": "react-flow-webview",
     }
 
 
@@ -105,6 +136,27 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [{"id": note_id, "label": "note", "type": "note"}],
+        "edges": [],
+    }
+
+
+async def friend_ai_chat(friend_id: str, body: FriendAIChatRequest):
+    return {
+        "blocked": True,
+        "friend_id": friend_id,
+        "user_id": body.user_id,
+        "message": body.message,
+        "note_collection": body.note_collection or f"friend-{friend_id}",
+        "reason": "Dify and Qdrant are not available in Cursor Cloud; contract is ready.",
+    }
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -115,12 +167,33 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+async def list_mini_programs():
+    return {
+        "items": [],
+        "generator": "Dify Workflow + e2b sandbox",
+        "blocked": not bool(settings.dify_api_key),
+    }
+
+
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
         "templates": [
             {"id": "tldraw-blank", "name": "无限画布", "engine": "tldraw"},
             {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"},
+        ]
+    }
+
+
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf-default",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+                "panes": ["source-pdf", "notes"],
+            }
         ]
     }
 
@@ -141,3 +214,75 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+async def desktop_build_plan():
+    return {
+        "status": "placeholder",
+        "targets": ["flutter-desktop", "tauri"],
+        "steps": [
+            "Install Flutter stable or Tauri toolchain locally.",
+            "Run scripts/build-desktop.sh after middleware configuration.",
+            "Package artifacts per platform once SDKs are available.",
+        ],
+    }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_compat():
+    return await openim_status()
+
+
+@compat_router.get("/workflows/templates")
+async def workflow_templates_compat():
+    return await workflow_templates()
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_compat():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_compat(q: str = ""):
+    return await search(q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_compat(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/notes/{note_id}")
+async def note_graph_compat(note_id: str):
+    return await note_graph(note_id)
+
+
+@compat_router.post("/friend-ai/{friend_id}/chat")
+async def friend_ai_chat_compat(friend_id: str, body: FriendAIChatRequest):
+    return await friend_ai_chat(friend_id, body)
+
+
+@compat_router.get("/miniprograms")
+async def list_mini_programs_compat():
+    return await list_mini_programs()
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_compat():
+    return await canvas_templates()
+
+
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates_compat():
+    return await dual_pdf_templates()
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_compat():
+    return await commerce_status()
+
+
+@compat_router.get("/desktop/build-plan")
+async def desktop_build_plan_compat():
+    return await desktop_build_plan()
