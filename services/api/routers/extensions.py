@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -27,6 +28,7 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+@compat_router.get("/openim/status")
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -34,6 +36,26 @@ async def openim_status():
         "status": "placeholder",
         "docs": "docs/OPENIM.md",
         "capabilities": ["friends", "groups", "team-chat"],
+    }
+
+
+@compat_router.get("/workflows/templates")
+@router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research-sop",
+                "name": "研究型 SOP",
+                "nodes": ["input", "search", "draft", "review", "archive"],
+            },
+            {
+                "id": "writing-sop",
+                "name": "写作型 SOP",
+                "nodes": ["outline", "draft", "polish", "proofread"],
+            },
+        ],
     }
 
 
@@ -46,6 +68,7 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@compat_router.get("/market/agents")
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -72,6 +95,8 @@ async def index_documents(body: SearchIndexRequest):
     }
 
 
+@compat_router.get("/search/")
+@compat_router.get("/search")
 @router.get("/search")
 async def search(q: str):
     return {
@@ -82,6 +107,7 @@ async def search(q: str):
     }
 
 
+@compat_router.get("/profile/{user_id}")
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -91,6 +117,27 @@ async def profile(user_id: str):
         "collections": [],
         "tags": [],
         "status": "placeholder",
+    }
+
+
+@compat_router.get("/graph/status")
+async def graph_status():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "status": "placeholder",
+        "capabilities": ["note-relations", "public-graph", "diy-graph"],
+    }
+
+
+@compat_router.get("/graph/notes/{note_id}/relations")
+async def note_relations(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
     }
 
 
@@ -105,6 +152,27 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@compat_router.get("/friend-ai/personas")
+async def friend_ai_personas(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "user_id": user_id,
+        "personas": [],
+        "reason": "Qdrant/Dify are not available in Cursor Cloud; contract is ready.",
+    }
+
+
+@compat_router.get("/miniprograms/")
+@compat_router.get("/miniprograms")
+async def mini_programs():
+    return {
+        "blocked": True,
+        "runtime": "dify-workflow + e2b-placeholder",
+        "items": [],
+    }
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -115,6 +183,7 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@compat_router.get("/canvas/templates")
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -125,12 +194,36 @@ async def canvas_templates():
     }
 
 
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf-default",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+                "panes": ["source-pdf", "notes"],
+            }
+        ]
+    }
+
+
+@compat_router.get("/commerce/status")
 @router.get("/commerce/status")
 async def commerce_status():
     return {
         "blocked": True,
         "medusa_api_url": settings.medusa_api_url,
         "capabilities": ["orders", "cart", "wallet"],
+    }
+
+
+@compat_router.get("/desktop/build-targets")
+async def desktop_build_targets():
+    return {
+        "status": "placeholder",
+        "targets": ["flutter-desktop", "tauri"],
+        "scripts": ["scripts/build-desktop.sh"],
     }
 
 
