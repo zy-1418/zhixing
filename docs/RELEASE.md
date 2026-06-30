@@ -18,23 +18,27 @@
 - MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
+- 补齐移动端/文档期望的兼容 API：任务详情/重试、工作区树形别名、笔记尾斜杠路径。
 
 ### P2 社交与工作流
 
 - 广场 Feed、赞/踩理由、结构化辩论 API 骨架。
 - OpenIM 集成边界文档与状态端点。
 - React Flow 工作流、Dify Agent 市场、Meilisearch 搜索、个人主页占位端点。
+- 提供根级兼容入口：`/api/v1/debates`、`/api/v1/workflows/definition`、`/api/v1/market/agents`、`/api/v1/search`、`/api/v1/profile/{user_id}`、`/api/v1/openim/status`。
 
 ### P3 知识图谱与 AI 小程序
 
 - Compose 增加 Neo4j。
 - 知识图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
+- 提供根级兼容入口：`/api/v1/graph/status`、`/api/v1/friend-ai/agents`、`/api/v1/miniprograms`、`/api/v1/canvas/template`、`/api/v1/dual-pdf/template`。
 
 ### P4 电商与桌面
 
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+- 提供根级兼容入口：`/api/v1/commerce/status`、`/api/v1/desktop/build-plan`。
 
 ## Cloud 降级
 
