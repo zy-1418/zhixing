@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions-compat"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -141,3 +142,100 @@ async def desktop_status():
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
     }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_alias():
+    return await openim_status()
+
+
+@compat_router.post("/workflows/")
+async def save_workflow_alias(definition: WorkflowDefinition):
+    return await save_workflow(definition)
+
+
+@compat_router.get("/workflows/")
+async def list_workflows_alias():
+    return {
+        "status": "placeholder",
+        "engine": "react-flow-webview",
+        "items": [],
+    }
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_alias():
+    return await list_market_agents()
+
+
+@compat_router.post("/search/index")
+async def index_documents_alias(body: SearchIndexRequest):
+    return await index_documents(body)
+
+
+@compat_router.get("/search/")
+async def search_alias(q: str = ""):
+    return await search(q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/status")
+async def graph_status_alias():
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "status": "placeholder",
+        "pipeline": "note-relation-extraction",
+    }
+
+
+@compat_router.get("/friend-ai/agents")
+async def friend_ai_agents_alias(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "user_id": user_id,
+        "items": [],
+    }
+
+
+@compat_router.get("/miniprograms/")
+async def list_mini_programs_alias():
+    return {
+        "status": "placeholder",
+        "sandbox": "e2b-placeholder",
+        "items": [],
+    }
+
+
+@compat_router.post("/miniprograms/")
+async def generate_mini_program_alias(body: MiniProgramRequest):
+    return await generate_mini_program(body)
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_alias():
+    return await canvas_templates()
+
+
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates_alias():
+    return {
+        "templates": [
+            {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"}
+        ]
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_alias():
+    return await commerce_status()
+
+
+@compat_router.get("/desktop/status")
+async def desktop_status_alias():
+    return await desktop_status()
