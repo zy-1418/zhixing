@@ -47,6 +47,16 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+@router.get("/feed")
+async def square_feed(tag: str | None = Query(None), limit: int = Query(20, ge=1, le=100)):
+    posts = await list_posts(tag=tag)
+    return {
+        "items": posts[:limit],
+        "count": min(len(posts), limit),
+        "source": "social_posts",
+    }
+
+
 @router.get("/posts")
 async def list_posts(tag: str | None = Query(None)):
     posts = list(_posts.values())
