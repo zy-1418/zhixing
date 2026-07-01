@@ -105,6 +105,42 @@ async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     return folder
 
 
+async def _folder_tree(user_id: uuid.UUID, db: AsyncSession) -> list[dict[str, Any]]:
+    result = await db.scalars(
+        select(WorkspaceFolder)
+        .where(WorkspaceFolder.user_id == user_id)
+        .order_by(WorkspaceFolder.sort_order, WorkspaceFolder.created_at)
+    )
+    folders = result.all()
+    nodes = {
+        str(folder.id): {
+            "id": str(folder.id),
+            "parent_id": str(folder.parent_id) if folder.parent_id else None,
+            "name": folder.name,
+            "folder_type": folder.folder_type,
+            "sort_order": folder.sort_order,
+            "children": [],
+        }
+        for folder in folders
+    }
+    roots = []
+    for folder in folders:
+        node = nodes[str(folder.id)]
+        if folder.parent_id and str(folder.parent_id) in nodes:
+            nodes[str(folder.parent_id)]["children"].append(node)
+        else:
+            roots.append(node)
+    return roots
+
+
+@router.get("/folders/tree")
+async def folders_tree(
+    user_id: uuid.UUID = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _folder_tree(user_id, db)
+
+
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
 async def get_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     folder = await db.get(WorkspaceFolder, folder_id)
@@ -142,31 +178,7 @@ async def delete_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)
 
 @router.get("/tree")
 async def folder_tree(user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)):
-    result = await db.scalars(
-        select(WorkspaceFolder)
-        .where(WorkspaceFolder.user_id == user_id)
-        .order_by(WorkspaceFolder.sort_order, WorkspaceFolder.created_at)
-    )
-    folders = result.all()
-    nodes = {
-        str(folder.id): {
-            "id": str(folder.id),
-            "parent_id": str(folder.parent_id) if folder.parent_id else None,
-            "name": folder.name,
-            "folder_type": folder.folder_type,
-            "sort_order": folder.sort_order,
-            "children": [],
-        }
-        for folder in folders
-    }
-    roots = []
-    for folder in folders:
-        node = nodes[str(folder.id)]
-        if folder.parent_id and str(folder.parent_id) in nodes:
-            nodes[str(folder.parent_id)]["children"].append(node)
-        else:
-            roots.append(node)
-    return roots
+    return await _folder_tree(user_id, db)
 
 
 @router.get("/conversations", response_model=list[ConversationResponse])
