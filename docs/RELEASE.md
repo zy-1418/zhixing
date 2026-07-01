@@ -35,6 +35,7 @@
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+- 补齐最终验收兼容路径：任务重试、工作区树别名、个人主页、图谱、好友 AI、小程序、tldraw、双联 PDF、桌面构建与离线笔记缓存端点。
 
 ## Cloud 降级
 
@@ -51,6 +52,15 @@ paths = app.openapi()["paths"]
 for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
     assert path in paths, path
 print("openapi ok")
+PY
+```
+
+本轮 Cloud 验收结果：
+
+```bash
+PYTHONPATH=services/api:services PYTHONPYCACHEPREFIX=/tmp/zhixing-pycache python3 -m compileall -q services/api services/metagpt_bridge
+PYTHONPATH=services/api:services python3 - <<'PY'
+# OpenAPI 合同检查通过：50 paths, 32 completed steps
 PY
 ```
 
