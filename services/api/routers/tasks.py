@@ -247,6 +247,20 @@ async def task_calendar(
     return result.all()
 
 
+@router.get("/queue")
+async def get_queue():
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    return await _queue_status(client)
+
+
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
 @router.patch("/{task_id}", response_model=TaskRead)
 async def update_task(
     task_id: uuid.UUID, body: TaskUpdate, db: AsyncSession = Depends(get_db)
@@ -273,10 +287,19 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
-@router.get("/queue")
-async def get_queue():
-    client = MetaGPTClient(base_url=settings.metagpt_x_api)
-    return await _queue_status(client)
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: uuid.UUID, qa_fix_rounds: int = 3, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task_id),
+            "reason": "Task has no MetaGPT job id to retry.",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+    return await optimize_metagpt_job(task.metagpt_job_id, qa_fix_rounds=qa_fix_rounds)
 
 
 async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from config import settings
 
 router = APIRouter(prefix="/extensions", tags=["extensions"])
+compat_router = APIRouter(tags=["extensions"])
 
 
 class WorkflowDefinition(BaseModel):
@@ -140,4 +141,107 @@ async def desktop_status():
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@compat_router.get("/openim/status")
+async def openim_status_alias():
+    return await openim_status()
+
+
+@compat_router.get("/workflows/templates")
+async def workflow_templates():
+    return {
+        "engine": "react-flow-webview",
+        "templates": [
+            {
+                "id": "research",
+                "name": "研究型工作流",
+                "nodes": ["检索", "初稿", "审查", "校验"],
+            },
+            {
+                "id": "writing",
+                "name": "写作型工作流",
+                "nodes": ["大纲", "起草", "润色", "校对"],
+            },
+        ],
+    }
+
+
+@compat_router.get("/market/agents")
+async def list_market_agents_alias():
+    return await list_market_agents()
+
+
+@compat_router.get("/search")
+async def search_alias(q: str = ""):
+    return await search(q=q)
+
+
+@compat_router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
+@compat_router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
+    }
+
+
+@compat_router.get("/friend-ai/agents")
+async def friend_ai_agents():
+    return {
+        "blocked": True,
+        "qdrant_url": settings.qdrant_url,
+        "agents": [],
+        "reason": "Qdrant/Dify are not available in Cursor Cloud; contract is ready.",
+    }
+
+
+@compat_router.get("/miniprograms")
+async def mini_programs():
+    return {
+        "items": [],
+        "generator": "Dify Workflow + e2b sandbox placeholder",
+        "blocked": not bool(settings.dify_api_key),
+    }
+
+
+@compat_router.get("/canvas/templates")
+async def canvas_templates_alias():
+    return await canvas_templates()
+
+
+@compat_router.get("/dual-pdf/templates")
+async def dual_pdf_templates():
+    return {
+        "templates": [
+            {
+                "id": "dual-pdf",
+                "name": "双联 PDF 阅读",
+                "engine": "pdf.js",
+            }
+        ]
+    }
+
+
+@compat_router.get("/commerce/status")
+async def commerce_status_alias():
+    return await commerce_status()
+
+
+@compat_router.get("/desktop/builds")
+async def desktop_builds():
+    status = await desktop_status()
+    return {
+        **status,
+        "builds": [],
+        "blocked": True,
+        "reason": "Flutter desktop/Tauri toolchains are unavailable in Cursor Cloud.",
     }
