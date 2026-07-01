@@ -247,6 +247,20 @@ async def task_calendar(
     return result.all()
 
 
+@router.get("/queue")
+async def get_queue():
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    return await _queue_status(client)
+
+
+@router.get("/{task_id}", response_model=TaskRead)
+async def get_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
 @router.patch("/{task_id}", response_model=TaskRead)
 async def update_task(
     task_id: uuid.UUID, body: TaskUpdate, db: AsyncSession = Depends(get_db)
@@ -271,12 +285,6 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     await db.delete(task)
     await db.commit()
-
-
-@router.get("/queue")
-async def get_queue():
-    client = MetaGPTClient(base_url=settings.metagpt_x_api)
-    return await _queue_status(client)
 
 
 async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
@@ -313,6 +321,11 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
             "reason": f"MetaGPT-X optimize unavailable: {e}",
             "qa_fix_rounds": qa_fix_rounds,
         }
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: uuid.UUID, qa_fix_rounds: int = 3):
+    return await optimize_metagpt_job(str(task_id), qa_fix_rounds=qa_fix_rounds)
 
 
 @router.websocket("/{job_id}/logs")

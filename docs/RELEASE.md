@@ -36,6 +36,12 @@
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
 
+### 最终 API 兼容契约
+
+- 补齐任务详情与 QA 重试路径：`GET /api/v1/tasks/{task_id}`、`POST /api/v1/tasks/{task_id}/retry`。
+- 补齐工作区兼容路径：`/api/v1/workspace/folders/tree`、对话 `export.json` / `export.md`。
+- 保留原 `/extensions/*` 路径，同时提供最终验收使用的根路径别名：OpenIM、workflow templates、market、search、profile、graph、friend-ai、miniprograms、canvas、dual-pdf、commerce、desktop。
+
 ## Cloud 降级
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。
