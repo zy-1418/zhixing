@@ -55,6 +55,11 @@ async def list_posts(tag: str | None = Query(None)):
     return sorted(posts, key=lambda item: item["created_at"], reverse=True)
 
 
+@router.get("/feed")
+async def feed(tag: str | None = Query(None)):
+    return await list_posts(tag=tag)
+
+
 @router.post("/posts", status_code=201)
 async def create_post(body: PostCreate):
     post_id = str(uuid.uuid4())
