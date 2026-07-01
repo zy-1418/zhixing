@@ -48,7 +48,19 @@ PYTHONPATH=services/api:services python3 -m compileall services/api services/met
 PYTHONPATH=services/api:services python3 - <<'PY'
 from main import app
 paths = app.openapi()["paths"]
-for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
+for path in [
+    "/health",
+    "/api/v1/auth/register",
+    "/api/v1/tasks/sop",
+    "/api/v1/tasks/{task_id}/retry",
+    "/api/v1/workspace/folders/tree",
+    "/api/v1/dify/chat",
+    "/api/v1/social/feed",
+    "/api/v1/extensions/profile/{user_id}",
+    "/api/v1/extensions/graph/sigma",
+    "/api/v1/extensions/friend-ai/switch",
+    "/api/v1/extensions/offline/notes",
+]:
     assert path in paths, path
 print("openapi ok")
 PY
