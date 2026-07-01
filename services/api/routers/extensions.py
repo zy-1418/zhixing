@@ -27,6 +27,17 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+class FriendAiSwitchRequest(BaseModel):
+    user_id: str
+    friend_id: str
+    mode: str = "rag"
+
+
+class DesktopBuildRequest(BaseModel):
+    target: str = "flutter-desktop"
+    channel: str = "stable"
+
+
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -82,6 +93,11 @@ async def search(q: str):
     }
 
 
+@router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -105,6 +121,44 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
+        "pipeline": "note-relation-extraction-placeholder",
+    }
+
+
+@router.get("/graph/sigma")
+async def sigma_graph():
+    return {
+        "status": "placeholder",
+        "engine": "sigma.js-webview",
+        "nodes": [],
+        "edges": [],
+    }
+
+
+@router.post("/friend-ai/switch")
+async def switch_friend_ai(body: FriendAiSwitchRequest):
+    return {
+        "status": "placeholder",
+        "user_id": body.user_id,
+        "friend_id": body.friend_id,
+        "mode": body.mode,
+        "qdrant_url": settings.qdrant_url,
+    }
+
+
+@router.post("/miniprograms")
+async def miniprograms_alias(body: MiniProgramRequest):
+    return await generate_mini_program(body)
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -125,6 +179,26 @@ async def canvas_templates():
     }
 
 
+@router.get("/canvas/templates/tldraw")
+async def tldraw_template():
+    return {
+        "id": "tldraw-blank",
+        "name": "无限画布",
+        "engine": "tldraw",
+        "status": "placeholder",
+    }
+
+
+@router.get("/pdf/dual-reader")
+async def dual_pdf_reader():
+    return {
+        "id": "dual-pdf",
+        "name": "双联 PDF 阅读",
+        "engine": "pdf.js",
+        "status": "placeholder",
+    }
+
+
 @router.get("/commerce/status")
 async def commerce_status():
     return {
@@ -140,4 +214,25 @@ async def desktop_status():
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.post("/desktop/builds")
+async def create_desktop_build(body: DesktopBuildRequest):
+    return {
+        "status": "blocked",
+        "reason": "Flutter/Tauri toolchains are unavailable in Cursor Cloud.",
+        "target": body.target,
+        "channel": body.channel,
+        "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/offline/notes")
+async def offline_notes(limit: int = 23):
+    return {
+        "status": "placeholder",
+        "limit": limit,
+        "items": [],
+        "strategy": "cache latest notes for offline reading",
     }
