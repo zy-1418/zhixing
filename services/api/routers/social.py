@@ -47,12 +47,25 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-@router.get("/posts")
-async def list_posts(tag: str | None = Query(None)):
+def _sorted_posts(tag: str | None = None) -> list[dict]:
     posts = list(_posts.values())
     if tag:
         posts = [post for post in posts if tag in post.get("tags", [])]
     return sorted(posts, key=lambda item: item["created_at"], reverse=True)
+
+
+@router.get("/feed")
+async def feed(tag: str | None = Query(None), user_id: uuid.UUID | None = Query(None)):
+    return {
+        "user_id": str(user_id) if user_id else None,
+        "items": _sorted_posts(tag),
+        "source": "in-memory-placeholder",
+    }
+
+
+@router.get("/posts")
+async def list_posts(tag: str | None = Query(None)):
+    return _sorted_posts(tag)
 
 
 @router.post("/posts", status_code=201)

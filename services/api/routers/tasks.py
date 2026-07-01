@@ -247,6 +247,56 @@ async def task_calendar(
     return result.all()
 
 
+@router.get("/queue")
+async def get_queue():
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    return await _queue_status(client)
+
+
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not task.metagpt_job_id:
+        return {
+            "blocked": True,
+            "task_id": str(task_id),
+            "reason": "Task has no MetaGPT job id to retry.",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        result = await client.optimize(task.metagpt_job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        return {
+            "blocked": True,
+            "task_id": str(task_id),
+            "job_id": task.metagpt_job_id,
+            "reason": f"MetaGPT-X optimize unavailable: {e}",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+    return {"task_id": str(task_id), "job_id": task.metagpt_job_id, "result": result}
+
+
+async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
+    try:
+        remote = await client.queue_status()
+        return {"remote": remote, "local_priority": _priority_queue}
+    except Exception as e:
+        return {
+            "remote": None,
+            "local_priority": _priority_queue,
+            "blocked": True,
+            "reason": f"MetaGPT-X queue unavailable: {e}",
+        }
+
+
 @router.patch("/{task_id}", response_model=TaskRead)
 async def update_task(
     task_id: uuid.UUID, body: TaskUpdate, db: AsyncSession = Depends(get_db)
@@ -271,25 +321,6 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     await db.delete(task)
     await db.commit()
-
-
-@router.get("/queue")
-async def get_queue():
-    client = MetaGPTClient(base_url=settings.metagpt_x_api)
-    return await _queue_status(client)
-
-
-async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
-    try:
-        remote = await client.queue_status()
-        return {"remote": remote, "local_priority": _priority_queue}
-    except Exception as e:
-        return {
-            "remote": None,
-            "local_priority": _priority_queue,
-            "blocked": True,
-            "reason": f"MetaGPT-X queue unavailable: {e}",
-        }
 
 
 @router.get("/metagpt/{job_id}")
