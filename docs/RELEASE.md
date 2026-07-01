@@ -35,6 +35,7 @@
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
+- 补齐最终验收稳定 API 别名：工作区树、广场 Feed、辩论、React Flow、个人页、图谱、AI 小程序、tldraw、双联 PDF、Medusa、桌面构建与离线笔记入口。
 
 ## Cloud 降级
 

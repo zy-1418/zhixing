@@ -46,6 +46,19 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@router.get("/workflows/react-flow")
+async def react_flow_webview():
+    return {
+        "engine": "react-flow",
+        "status": "placeholder",
+        "webview": {
+            "nodes": [],
+            "edges": [],
+            "supports": ["drag", "connect", "export-json"],
+        },
+    }
+
+
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -94,10 +107,52 @@ async def profile(user_id: str):
     }
 
 
+@router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id=user_id)
+
+
+@router.get("/debates")
+async def debates_contract():
+    return {
+        "status": "placeholder",
+        "source": "social router",
+        "routes": {
+            "create": "/api/v1/social/debates",
+            "comment": "/api/v1/social/debates/{debate_id}/comments",
+        },
+        "pinning": "evidence-count-then-recency",
+    }
+
+
 @router.get("/knowledge/graph")
 async def knowledge_graph(user_id: str | None = None):
     return {
         "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "user_id": user_id,
+        "nodes": [],
+        "edges": [],
+    }
+
+
+@router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "pipeline": "note-relation-extraction-placeholder",
+        "nodes": [],
+        "edges": [],
+    }
+
+
+@router.get("/graph/sigma")
+async def sigma_graph_webview(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "engine": "sigma.js",
         "neo4j_url": settings.neo4j_url,
         "user_id": user_id,
         "nodes": [],
@@ -115,6 +170,16 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@router.get("/miniprograms")
+async def list_mini_programs():
+    return {
+        "blocked": not bool(settings.dify_api_key),
+        "items": [],
+        "generator": "/api/v1/extensions/mini-programs/generate",
+        "runtime": "dify-workflow-e2b-placeholder",
+    }
+
+
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -122,6 +187,27 @@ async def canvas_templates():
             {"id": "tldraw-blank", "name": "无限画布", "engine": "tldraw"},
             {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"},
         ]
+    }
+
+
+@router.get("/canvas/templates/tldraw")
+async def tldraw_template():
+    return {
+        "id": "tldraw-blank",
+        "name": "无限画布",
+        "engine": "tldraw",
+        "status": "placeholder",
+        "initial_document": {"shapes": {}, "bindings": {}},
+    }
+
+
+@router.get("/pdf/dual-reader")
+async def dual_pdf_reader():
+    return {
+        "engine": "pdf.js",
+        "status": "placeholder",
+        "layout": "dual-column",
+        "features": ["sync-scroll", "notes-pane", "citation-selection"],
     }
 
 
@@ -134,10 +220,35 @@ async def commerce_status():
     }
 
 
+@router.get("/medusa/status")
+async def medusa_status_alias():
+    return await commerce_status()
+
+
 @router.get("/desktop/status")
 async def desktop_status():
     return {
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/desktop/builds")
+async def desktop_builds():
+    return {
+        "status": "placeholder",
+        "targets": ["linux", "macos", "windows"],
+        "strategies": ["flutter-desktop", "tauri"],
+        "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/offline/notes")
+async def offline_notes():
+    return {
+        "status": "placeholder",
+        "strategy": "mobile-local-cache",
+        "limit": 23,
+        "sync": "last-write-wins-placeholder",
     }
