@@ -94,6 +94,11 @@ async def profile(user_id: str):
     }
 
 
+@router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
 @router.get("/knowledge/graph")
 async def knowledge_graph(user_id: str | None = None):
     return {
@@ -102,6 +107,45 @@ async def knowledge_graph(user_id: str | None = None):
         "user_id": user_id,
         "nodes": [],
         "edges": [],
+    }
+
+
+@router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
+        "pipeline": "note-relation-extraction-placeholder",
+    }
+
+
+@router.get("/graph/sigma")
+async def sigma_graph_view():
+    return {
+        "status": "placeholder",
+        "engine": "sigma.js-webview",
+        "source": "neo4j",
+        "blocked": True,
+        "reason": "Neo4j is not available in Cursor Cloud; graph view contract is ready.",
+    }
+
+
+@router.post("/friend-ai/switch")
+async def switch_friend_ai(user_id: str, friend_user_id: str):
+    reason = (
+        "Qdrant/Dify are not available in Cursor Cloud; "
+        "RAG switching contract is ready."
+    )
+    return {
+        "status": "placeholder",
+        "user_id": user_id,
+        "friend_user_id": friend_user_id,
+        "qdrant_collection": f"friend_ai_{friend_user_id}",
+        "blocked": True,
+        "reason": reason,
     }
 
 
@@ -115,6 +159,11 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@router.post("/miniprograms")
+async def create_miniprogram(body: MiniProgramRequest):
+    return await generate_mini_program(body)
+
+
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -122,6 +171,28 @@ async def canvas_templates():
             {"id": "tldraw-blank", "name": "无限画布", "engine": "tldraw"},
             {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"},
         ]
+    }
+
+
+@router.get("/canvas/templates/tldraw")
+async def tldraw_template():
+    return {
+        "id": "tldraw-blank",
+        "name": "无限画布",
+        "engine": "tldraw",
+        "status": "placeholder",
+        "webview_asset": "apps/mobile/assets/web/tldraw/index.html",
+    }
+
+
+@router.get("/pdf/dual-reader")
+async def dual_pdf_reader():
+    return {
+        "id": "dual-pdf",
+        "name": "双联 PDF 阅读",
+        "engine": "pdf.js",
+        "status": "placeholder",
+        "layout": "left-pdf-right-notes",
     }
 
 
@@ -140,4 +211,24 @@ async def desktop_status():
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/desktop/builds")
+async def desktop_builds():
+    return {
+        "status": "placeholder",
+        "targets": ["flutter-desktop", "tauri"],
+        "artifacts": [],
+        "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/offline/notes")
+async def offline_notes(limit: int = 23):
+    return {
+        "status": "placeholder",
+        "limit": limit,
+        "strategy": "cache-most-recent-notes",
+        "items": [],
     }
