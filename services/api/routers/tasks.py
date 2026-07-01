@@ -301,6 +301,36 @@ async def get_metagpt_job(job_id: str):
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: str, qa_fix_rounds: int = 3, db: AsyncSession = Depends(get_db)):
+    metagpt_job_id = task_id
+    try:
+        local_task_id = uuid.UUID(task_id)
+    except ValueError:
+        local_task_id = None
+
+    if local_task_id is not None:
+        task = await db.get(Task, local_task_id)
+        if task is None:
+            raise HTTPException(status_code=404, detail="Task not found")
+        if task.metagpt_job_id:
+            metagpt_job_id = task.metagpt_job_id
+        task.status = "queued"
+        task.metadata_ = {
+            **(task.metadata_ or {}),
+            "retry_requested_at": datetime.utcnow().isoformat(),
+            "retry_qa_fix_rounds": qa_fix_rounds,
+        }
+        await db.commit()
+
+    result = await optimize_metagpt_job(metagpt_job_id, qa_fix_rounds=qa_fix_rounds)
+    return {
+        "task_id": task_id,
+        "metagpt_job_id": metagpt_job_id,
+        "retry": result,
+    }
+
+
 @router.post("/metagpt/{job_id}/optimize")
 async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
