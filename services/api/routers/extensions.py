@@ -27,6 +27,12 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+class FriendAISwitchRequest(BaseModel):
+    user_id: str
+    friend_id: str
+    mode: str = Field("rag", description="好友 AI 分身模式，如 rag 或 summary")
+
+
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -94,6 +100,11 @@ async def profile(user_id: str):
     }
 
 
+@router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
 @router.get("/knowledge/graph")
 async def knowledge_graph(user_id: str | None = None):
     return {
@@ -102,6 +113,41 @@ async def knowledge_graph(user_id: str | None = None):
         "user_id": user_id,
         "nodes": [],
         "edges": [],
+    }
+
+
+@router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [{"id": note_id, "label": "note", "type": "note"}],
+        "edges": [],
+        "reason": "Neo4j is not available in Cursor Cloud; graph contract is ready.",
+    }
+
+
+@router.get("/graph/sigma")
+async def sigma_graph_webview():
+    return {
+        "status": "placeholder",
+        "engine": "sigma.js",
+        "entry": "apps/mobile/assets/web/sigma/index.html",
+        "data_endpoint": "/api/v1/extensions/knowledge/graph",
+    }
+
+
+@router.post("/friend-ai/switch")
+async def switch_friend_ai(body: FriendAISwitchRequest):
+    return {
+        "status": "placeholder",
+        "user_id": body.user_id,
+        "friend_id": body.friend_id,
+        "mode": body.mode,
+        "vector_store": "qdrant-user-namespace-placeholder",
+        "blocked": True,
+        "reason": "Qdrant/Dify are not available in Cursor Cloud.",
     }
 
 
@@ -115,6 +161,21 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@router.get("/miniprograms")
+async def list_miniprograms():
+    return {
+        "status": "placeholder",
+        "items": [
+            {
+                "id": "dify-workflow-starter",
+                "name": "Dify Workflow 小程序",
+                "engine": "dify-workflow",
+                "sandbox": "e2b-placeholder",
+            }
+        ],
+    }
+
+
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -122,6 +183,29 @@ async def canvas_templates():
             {"id": "tldraw-blank", "name": "无限画布", "engine": "tldraw"},
             {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"},
         ]
+    }
+
+
+@router.get("/canvas/templates/tldraw")
+async def tldraw_canvas_template():
+    return {
+        "id": "tldraw-blank",
+        "name": "无限画布",
+        "engine": "tldraw",
+        "webview_entry": "apps/mobile/assets/web/tldraw/index.html",
+        "status": "placeholder",
+    }
+
+
+@router.get("/pdf/dual-reader")
+async def dual_pdf_reader():
+    return {
+        "id": "dual-pdf",
+        "name": "双联 PDF 阅读",
+        "engine": "pdf.js",
+        "layout": "source-and-notes",
+        "webview_entry": "apps/mobile/assets/web/pdf/dual_reader.html",
+        "status": "placeholder",
     }
 
 
@@ -140,4 +224,27 @@ async def desktop_status():
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/desktop/builds")
+async def desktop_builds():
+    return {
+        "status": "placeholder",
+        "targets": [
+            {"id": "linux", "toolchain": "flutter-desktop", "available": False},
+            {"id": "macos", "toolchain": "flutter-desktop", "available": False},
+            {"id": "windows", "toolchain": "tauri", "available": False},
+        ],
+        "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/offline/notes")
+async def offline_notes_cache():
+    return {
+        "status": "placeholder",
+        "capacity": 23,
+        "strategy": "latest-updated-notes",
+        "storage": "flutter-local-cache-placeholder",
     }
