@@ -315,6 +315,12 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: uuid.UUID, qa_fix_rounds: int = 3):
+    """Stable Zhixing retry endpoint mapped to MetaGPT optimize."""
+    return await optimize_metagpt_job(str(task_id), qa_fix_rounds=qa_fix_rounds)
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()

@@ -47,6 +47,14 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+@router.get("/feed")
+async def feed(tag: str | None = Query(None), sort: Literal["new", "hot"] = "hot"):
+    posts = await list_posts(tag=tag)
+    if sort == "hot":
+        return sorted(posts, key=lambda item: item.get("score", 0), reverse=True)
+    return posts
+
+
 @router.get("/posts")
 async def list_posts(tag: str | None = Query(None)):
     posts = list(_posts.values())
