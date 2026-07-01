@@ -36,6 +36,12 @@
 - Flutter desktop 构建脚本占位。
 - 个人页展示离线缓存入口。
 
+### 最终兼容契约
+
+- 补齐根级兼容 API：搜索、个人主页、电商状态、桌面构建、OpenIM、工作流模板、市场、知识图谱、好友 AI、小程序、画布与双联 PDF。
+- 补齐任务详情与 QA 重试路径：`/api/v1/tasks/{task_id}`、`/api/v1/tasks/{task_id}/retry`。
+- 补齐客户端兼容路径：`/api/v1/workspace/folders/tree`、`/api/v1/notes/`。
+
 ## Cloud 降级
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。
@@ -53,6 +59,14 @@ for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/d
 print("openapi ok")
 PY
 ```
+
+本次 Cloud 验证结果：
+
+- Python 依赖安装成功。
+- `compileall` 通过：`services/api`、`services/metagpt_bridge`。
+- OpenAPI 契约检查通过：61 个路径，32 个 workflow step 全部 completed。
+- 路由匹配检查通过：`/api/v1/workspace/folders/tree` 正确命中树接口。
+- `git diff --check` 通过。
 
 本机具备 Docker/Flutter 后继续执行：
 
