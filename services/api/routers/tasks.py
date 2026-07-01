@@ -301,6 +301,11 @@ async def get_metagpt_job(job_id: str):
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: str, qa_fix_rounds: int = 3):
+    return await optimize_metagpt_job(job_id=task_id, qa_fix_rounds=qa_fix_rounds)
+
+
 @router.post("/metagpt/{job_id}/optimize")
 async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
