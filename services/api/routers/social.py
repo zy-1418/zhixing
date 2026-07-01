@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/social", tags=["social"])
+compat_router = APIRouter(tags=["social-compatibility"])
 
 VoteType = Literal["up", "down"]
 Side = Literal["pro", "con"]
@@ -72,6 +73,7 @@ async def create_post(body: PostCreate):
 
 
 @router.post("/posts/{post_id}/votes", status_code=201)
+@router.post("/posts/{post_id}/vote", status_code=201)
 async def vote_post(post_id: str, body: VoteCreate):
     post = _posts.get(post_id)
     if post is None:
@@ -132,3 +134,8 @@ async def add_debate_comment(debate_id: str, body: DebateCommentCreate):
     }
     debate["comments"].append(comment)
     return comment
+
+
+@compat_router.post("/debates/", status_code=201)
+async def create_debate_compat(body: DebateCreate):
+    return await create_debate(body)
