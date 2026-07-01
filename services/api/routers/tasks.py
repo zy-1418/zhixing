@@ -315,6 +315,29 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(task_id: str, qa_fix_rounds: int = 3, db: AsyncSession = Depends(get_db)):
+    job_id = task_id
+    try:
+        task_uuid = uuid.UUID(task_id)
+    except ValueError:
+        task_uuid = None
+
+    if task_uuid is not None:
+        task = await db.get(Task, task_uuid)
+        if task is None:
+            raise HTTPException(status_code=404, detail="Task not found")
+        if task.metagpt_job_id:
+            job_id = task.metagpt_job_id
+
+    result = await optimize_metagpt_job(job_id, qa_fix_rounds=qa_fix_rounds)
+    return {
+        "task_id": task_id,
+        "metagpt_job_id": job_id,
+        "retry": result,
+    }
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()
