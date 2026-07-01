@@ -105,6 +105,13 @@ async def create_folder(body: FolderCreate, db: AsyncSession = Depends(get_db)):
     return folder
 
 
+@router.get("/folders/tree")
+async def folder_tree_alias(
+    user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)
+):
+    return await folder_tree(user_id=user_id, db=db)
+
+
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
 async def get_folder(folder_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     folder = await db.get(WorkspaceFolder, folder_id)
