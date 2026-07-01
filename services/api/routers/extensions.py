@@ -46,6 +46,16 @@ async def save_workflow(definition: WorkflowDefinition):
     }
 
 
+@router.get("/workflows/react-flow")
+async def react_flow_webview():
+    return {
+        "status": "placeholder",
+        "engine": "react-flow-webview",
+        "assets": ["apps/mobile/lib/screens/workspace/workspace_screen.dart"],
+        "capabilities": ["nodes", "edges", "webview-embed"],
+    }
+
+
 @router.get("/market/agents")
 async def list_market_agents():
     return {
@@ -82,6 +92,11 @@ async def search(q: str):
     }
 
 
+@router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
 @router.get("/profiles/{user_id}")
 async def profile(user_id: str):
     return {
@@ -105,6 +120,50 @@ async def knowledge_graph(user_id: str | None = None):
     }
 
 
+@router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "neo4j_url": settings.neo4j_url,
+        "note_id": note_id,
+        "nodes": [],
+        "edges": [],
+        "pipeline": "note relation extraction placeholder",
+    }
+
+
+@router.get("/graph/sigma")
+async def sigma_graph(user_id: str | None = None):
+    return {
+        "blocked": True,
+        "engine": "sigma.js",
+        "user_id": user_id,
+        "webview": "placeholder",
+        "nodes": [],
+        "edges": [],
+    }
+
+
+@router.get("/debates")
+async def debates_status():
+    return {
+        "status": "placeholder",
+        "source": "/api/v1/social/debates",
+        "features": ["pro-con-comments", "evidence-ranking"],
+    }
+
+
+@router.post("/friend-ai/switch")
+async def switch_friend_ai(user_id: str, friend_user_id: str):
+    return {
+        "status": "placeholder",
+        "user_id": user_id,
+        "friend_user_id": friend_user_id,
+        "qdrant_url": settings.qdrant_url,
+        "collection": f"friend_ai_{friend_user_id}",
+    }
+
+
 @router.post("/mini-programs/generate")
 async def generate_mini_program(body: MiniProgramRequest):
     return {
@@ -113,6 +172,11 @@ async def generate_mini_program(body: MiniProgramRequest):
         "dify_workflow_id": body.dify_workflow_id,
         "sandbox": "e2b-placeholder",
     }
+
+
+@router.post("/miniprograms")
+async def create_miniprogram(body: MiniProgramRequest):
+    return await generate_mini_program(body)
 
 
 @router.get("/canvas/templates")
@@ -125,6 +189,26 @@ async def canvas_templates():
     }
 
 
+@router.get("/canvas/templates/tldraw")
+async def tldraw_template():
+    return {
+        "id": "tldraw-blank",
+        "name": "无限画布",
+        "engine": "tldraw",
+        "status": "placeholder",
+    }
+
+
+@router.get("/pdf/dual-reader")
+async def dual_pdf_reader():
+    return {
+        "id": "dual-pdf",
+        "name": "双联 PDF 阅读",
+        "engine": "pdf.js",
+        "status": "placeholder",
+    }
+
+
 @router.get("/commerce/status")
 async def commerce_status():
     return {
@@ -134,10 +218,36 @@ async def commerce_status():
     }
 
 
+@router.get("/medusa/status")
+async def medusa_status():
+    return await commerce_status()
+
+
 @router.get("/desktop/status")
 async def desktop_status():
     return {
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.post("/desktop/builds")
+async def create_desktop_build(target: str = "flutter-desktop"):
+    return {
+        "status": "blocked",
+        "target": target,
+        "reason": "Flutter/Tauri build toolchain is unavailable in Cursor Cloud.",
+        "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/offline/notes")
+async def offline_notes(user_id: str | None = None):
+    return {
+        "status": "placeholder",
+        "user_id": user_id,
+        "capacity": 23,
+        "items": [],
+        "storage": "flutter-local-cache",
     }
