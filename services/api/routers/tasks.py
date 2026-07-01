@@ -279,6 +279,29 @@ async def get_queue():
     return await _queue_status(client)
 
 
+@router.post("/{task_id}/retry")
+async def retry_task(
+    task_id: uuid.UUID,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(Task, task_id)
+    job_id = str(task.metagpt_job_id) if task and task.metagpt_job_id else str(task_id)
+    result = await optimize_metagpt_job(job_id, qa_fix_rounds=qa_fix_rounds)
+    if task is not None:
+        task.status = "queued" if result.get("blocked") else "running"
+        task.metadata_ = {
+            **(task.metadata_ or {}),
+            "retry": {
+                "metagpt_job_id": job_id,
+                "qa_fix_rounds": qa_fix_rounds,
+                "result": result,
+            },
+        }
+        await db.commit()
+    return {"task_id": str(task_id), "metagpt_job_id": job_id, "retry": result}
+
+
 async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
     try:
         remote = await client.queue_status()
