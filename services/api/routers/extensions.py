@@ -27,6 +27,12 @@ class MiniProgramRequest(BaseModel):
     inputs: dict[str, Any] = Field(default_factory=dict)
 
 
+class FriendAISwitchRequest(BaseModel):
+    user_id: str
+    friend_id: str
+    conversation_id: str | None = None
+
+
 @router.get("/openim/status")
 async def openim_status():
     return {
@@ -94,6 +100,11 @@ async def profile(user_id: str):
     }
 
 
+@router.get("/profile/{user_id}")
+async def profile_alias(user_id: str):
+    return await profile(user_id)
+
+
 @router.get("/knowledge/graph")
 async def knowledge_graph(user_id: str | None = None):
     return {
@@ -102,6 +113,40 @@ async def knowledge_graph(user_id: str | None = None):
         "user_id": user_id,
         "nodes": [],
         "edges": [],
+    }
+
+
+@router.get("/graph/notes/{note_id}")
+async def note_graph(note_id: str):
+    return {
+        "blocked": True,
+        "note_id": note_id,
+        "neo4j_url": settings.neo4j_url,
+        "pipeline": "note-relation-extraction-placeholder",
+        "nodes": [{"id": note_id, "type": "note"}],
+        "edges": [],
+    }
+
+
+@router.get("/graph/sigma")
+async def sigma_graph(user_id: str | None = None):
+    graph = await knowledge_graph(user_id=user_id)
+    return {
+        **graph,
+        "renderer": "sigma.js",
+        "webview": "apps/mobile WebView placeholder",
+    }
+
+
+@router.post("/friend-ai/switch")
+async def switch_friend_ai(body: FriendAISwitchRequest):
+    return {
+        "status": "placeholder",
+        "user_id": body.user_id,
+        "friend_id": body.friend_id,
+        "conversation_id": body.conversation_id,
+        "qdrant_collection": f"friend_ai_{body.friend_id}",
+        "qdrant_url": settings.qdrant_url,
     }
 
 
@@ -115,6 +160,11 @@ async def generate_mini_program(body: MiniProgramRequest):
     }
 
 
+@router.post("/miniprograms")
+async def create_miniprogram(body: MiniProgramRequest):
+    return await generate_mini_program(body)
+
+
 @router.get("/canvas/templates")
 async def canvas_templates():
     return {
@@ -122,6 +172,28 @@ async def canvas_templates():
             {"id": "tldraw-blank", "name": "无限画布", "engine": "tldraw"},
             {"id": "dual-pdf", "name": "双联 PDF 阅读", "engine": "pdf.js"},
         ]
+    }
+
+
+@router.get("/canvas/templates/tldraw")
+async def tldraw_template():
+    return {
+        "id": "tldraw-blank",
+        "name": "无限画布",
+        "engine": "tldraw",
+        "webview_asset": "apps/mobile/assets/web/tldraw/index.html",
+        "status": "placeholder",
+    }
+
+
+@router.get("/pdf/dual-reader")
+async def dual_pdf_reader():
+    return {
+        "id": "dual-pdf",
+        "name": "双联 PDF 阅读",
+        "engine": "pdf.js",
+        "layout": "two-column",
+        "status": "placeholder",
     }
 
 
@@ -140,4 +212,25 @@ async def desktop_status():
         "status": "placeholder",
         "targets": ["flutter-desktop", "tauri"],
         "scripts": ["scripts/build-desktop.sh"],
+    }
+
+
+@router.get("/desktop/builds")
+async def desktop_builds():
+    return {
+        "status": "placeholder",
+        "targets": ["linux", "macos", "windows"],
+        "scripts": ["scripts/build-desktop.sh"],
+        "blocked": True,
+        "reason": "Flutter/Tauri desktop toolchains are not installed in Cursor Cloud.",
+    }
+
+
+@router.get("/offline/notes")
+async def offline_notes(limit: int = 23):
+    return {
+        "status": "placeholder",
+        "limit": limit,
+        "strategy": "cache most recent notes for offline reading",
+        "items": [],
     }

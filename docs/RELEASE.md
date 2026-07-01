@@ -28,13 +28,13 @@
 ### P3 知识图谱与 AI 小程序
 
 - Compose 增加 Neo4j。
-- 知识图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
+- 知识图谱、sigma.js 图谱、好友 AI、Dify Workflow 小程序、tldraw 画布、双联 PDF 模板端点。
 
 ### P4 电商与桌面
 
 - Medusa 订单/购物车/钱包代理状态端点。
 - Flutter desktop 构建脚本占位。
-- 个人页展示离线缓存入口。
+- 桌面端构建状态、离线笔记缓存入口与稳定 API 兼容别名。
 
 ## Cloud 降级
 
