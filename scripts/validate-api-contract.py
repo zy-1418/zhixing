@@ -9,6 +9,7 @@ for path in (ROOT / "services" / "api", ROOT / "services"):
     sys.path.insert(0, str(path))
 
 from main import app  # noqa: E402
+from routers.tasks import router as tasks_router  # noqa: E402
 
 
 REQUIRED_HTTP_PATHS = {
@@ -36,7 +37,9 @@ REQUIRED_WEBSOCKET_PATHS = {
 def main() -> None:
     openapi_paths = set(app.openapi()["paths"])
     missing_http = sorted(REQUIRED_HTTP_PATHS - openapi_paths)
-    websocket_paths = {getattr(route, "path", "") for route in app.routes}
+    websocket_paths = {
+        f"/api/v1{getattr(route, 'path', '')}" for route in tasks_router.routes
+    }
     missing_ws = sorted(REQUIRED_WEBSOCKET_PATHS - websocket_paths)
 
     if missing_http or missing_ws:
