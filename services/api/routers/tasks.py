@@ -100,10 +100,53 @@ class TaskRead(BaseModel):
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
+class PublicTaskStatus(BaseModel):
+    id: str
+    metagpt_job_id: str | None = None
+    status: str
+    source: Literal["zhixing", "metagpt"]
+    task: TaskRead | None = None
+    metagpt: dict[str, Any] | None = None
+    blocked: bool = False
+    blocked_reason: str | None = None
+
+
+class RetryTaskResponse(BaseModel):
+    id: str
+    metagpt_job_id: str
+    status: str
+    result: dict[str, Any] | None = None
+    blocked: bool = False
+    blocked_reason: str | None = None
+    qa_fix_rounds: int
+
+
 def _slugify(text: str) -> str:
     s = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
     s = re.sub(r"[\s_]+", "-", s.strip()).lower()
     return (s[:48] or "task").strip("-")
+
+
+def _parse_uuid(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
+async def _get_local_task(db: AsyncSession, task_id: str) -> Task | None:
+    parsed = _parse_uuid(task_id)
+    if parsed is None:
+        return None
+    return await db.get(Task, parsed)
+
+
+def _metagpt_unavailable_payload(job_id: str, action: str, error: Exception) -> dict[str, Any]:
+    return {
+        "blocked": True,
+        "job_id": job_id,
+        "reason": f"MetaGPT-X {action} unavailable: {error}",
+    }
 
 
 @router.post("/sop", response_model=TaskResponse)
@@ -277,6 +320,84 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 async def get_queue():
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
     return await _queue_status(client)
+
+
+@router.get("/{id}", response_model=PublicTaskStatus)
+async def get_task_status(id: str, db: AsyncSession = Depends(get_db)):
+    task = await _get_local_task(db, id)
+    job_id = task.metagpt_job_id if task is not None else id
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+
+    metagpt: dict[str, Any] | None = None
+    blocked_reason: str | None = None
+    blocked = False
+    if job_id:
+        try:
+            metagpt = await client.get_project(job_id)
+        except Exception as e:
+            blocked = True
+            blocked_reason = _metagpt_unavailable_payload(job_id, "status", e)["reason"]
+
+    if task is None and metagpt is None and blocked:
+        return PublicTaskStatus(
+            id=id,
+            metagpt_job_id=job_id,
+            status="blocked",
+            source="metagpt",
+            blocked=True,
+            blocked_reason=blocked_reason,
+        )
+
+    if task is None and metagpt is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    remote_status = metagpt.get("status") if metagpt else None
+    local_status = task.status if task is not None else None
+    return PublicTaskStatus(
+        id=str(task.id) if task is not None else id,
+        metagpt_job_id=job_id,
+        status=str(remote_status or local_status or "unknown"),
+        source="zhixing" if task is not None else "metagpt",
+        task=TaskRead.model_validate(task) if task is not None else None,
+        metagpt=metagpt,
+        blocked=blocked,
+        blocked_reason=blocked_reason,
+    )
+
+
+@router.post("/{id}/retry", response_model=RetryTaskResponse)
+async def retry_task(id: str, qa_fix_rounds: int = 3, db: AsyncSession = Depends(get_db)):
+    task = await _get_local_task(db, id)
+    job_id = task.metagpt_job_id if task is not None else id
+    if not job_id:
+        raise HTTPException(status_code=409, detail="Task has no MetaGPT job id")
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        result = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        payload = _metagpt_unavailable_payload(job_id, "optimize", e)
+        return RetryTaskResponse(
+            id=str(task.id) if task is not None else id,
+            metagpt_job_id=job_id,
+            status="blocked",
+            result=payload,
+            blocked=True,
+            blocked_reason=payload["reason"],
+            qa_fix_rounds=qa_fix_rounds,
+        )
+
+    if task is not None:
+        task.status = result.get("status", "queued")
+        await db.commit()
+
+    return RetryTaskResponse(
+        id=str(task.id) if task is not None else id,
+        metagpt_job_id=job_id,
+        status=result.get("status", "queued"),
+        result=result,
+        qa_fix_rounds=qa_fix_rounds,
+    )
 
 
 async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
