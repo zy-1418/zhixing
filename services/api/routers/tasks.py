@@ -100,10 +100,65 @@ class TaskRead(BaseModel):
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
+class TaskStatusResponse(BaseModel):
+    identifier: str
+    zhixing_task_id: str | None = None
+    metagpt_job_id: str | None = None
+    name: str | None = None
+    status: str
+    task: dict[str, Any] | None = None
+    metagpt: dict[str, Any] | None = None
+    blocked: bool = False
+    blocked_reason: str | None = None
+    local_lookup_error: str | None = None
+
+
+class TaskRetryResponse(BaseModel):
+    identifier: str
+    zhixing_task_id: str | None = None
+    metagpt_job_id: str | None = None
+    status: str
+    retry: dict[str, Any] | None = None
+    blocked: bool = False
+    blocked_reason: str | None = None
+    local_lookup_error: str | None = None
+    qa_fix_rounds: int
+
+
 def _slugify(text: str) -> str:
     s = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
     s = re.sub(r"[\s_]+", "-", s.strip()).lower()
     return (s[:48] or "task").strip("-")
+
+
+def _parse_uuid(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
+def _task_payload(task: Task) -> dict[str, Any]:
+    return TaskRead.model_validate(task).model_dump(
+        mode="json",
+        by_alias=True,
+    )
+
+
+async def _find_task_by_identifier(
+    identifier: str,
+    db: AsyncSession,
+) -> Task | None:
+    task_id = _parse_uuid(identifier)
+    if task_id is not None:
+        task = await db.get(Task, task_id)
+        if task is not None:
+            return task
+
+    result = await db.scalars(
+        select(Task).where(Task.metagpt_job_id == identifier).limit(1)
+    )
+    return result.first()
 
 
 @router.post("/sop", response_model=TaskResponse)
@@ -313,6 +368,124 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
             "reason": f"MetaGPT-X optimize unavailable: {e}",
             "qa_fix_rounds": qa_fix_rounds,
         }
+
+
+@router.get("/{identifier}", response_model=TaskStatusResponse)
+async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
+    task: Task | None = None
+    local_lookup_error: str | None = None
+    try:
+        task = await _find_task_by_identifier(identifier, db)
+    except Exception as e:
+        local_lookup_error = str(e)
+
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    task_data = _task_payload(task) if task is not None else None
+
+    if task is not None and not task.metagpt_job_id:
+        return TaskStatusResponse(
+            identifier=identifier,
+            zhixing_task_id=str(task.id),
+            metagpt_job_id=None,
+            name=task.name,
+            status=task.status,
+            task=task_data,
+            local_lookup_error=local_lookup_error,
+        )
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        remote = await client.get_project(job_id)
+    except Exception as e:
+        blocked_reason = f"MetaGPT-X status unavailable: {e}"
+        return TaskStatusResponse(
+            identifier=identifier,
+            zhixing_task_id=str(task.id) if task is not None else None,
+            metagpt_job_id=job_id,
+            name=task.name if task is not None else None,
+            status=task.status if task is not None else "blocked",
+            task=task_data,
+            blocked=True,
+            blocked_reason=blocked_reason,
+            local_lookup_error=local_lookup_error,
+        )
+
+    remote_status = str(remote.get("status") or remote.get("state") or "unknown")
+    return TaskStatusResponse(
+        identifier=identifier,
+        zhixing_task_id=str(task.id) if task is not None else None,
+        metagpt_job_id=job_id,
+        name=task.name if task is not None else remote.get("name"),
+        status=remote_status,
+        task=task_data,
+        metagpt=remote,
+        local_lookup_error=local_lookup_error,
+    )
+
+
+@router.post("/{identifier}/retry", response_model=TaskRetryResponse)
+async def retry_task(
+    identifier: str,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task: Task | None = None
+    local_lookup_error: str | None = None
+    try:
+        task = await _find_task_by_identifier(identifier, db)
+    except Exception as e:
+        local_lookup_error = str(e)
+
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    if task is not None and not task.metagpt_job_id:
+        return TaskRetryResponse(
+            identifier=identifier,
+            zhixing_task_id=str(task.id),
+            metagpt_job_id=None,
+            status=task.status,
+            blocked=True,
+            blocked_reason="Task has no MetaGPT job id to retry",
+            local_lookup_error=local_lookup_error,
+            qa_fix_rounds=qa_fix_rounds,
+        )
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        retry_result = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        return TaskRetryResponse(
+            identifier=identifier,
+            zhixing_task_id=str(task.id) if task is not None else None,
+            metagpt_job_id=job_id,
+            status=task.status if task is not None else "blocked",
+            blocked=True,
+            blocked_reason=f"MetaGPT-X optimize unavailable: {e}",
+            local_lookup_error=local_lookup_error,
+            qa_fix_rounds=qa_fix_rounds,
+        )
+
+    if task is not None:
+        task.status = "queued"
+        task.metadata_ = {
+            **(task.metadata_ or {}),
+            "last_retry_at": datetime.utcnow().isoformat(),
+            "last_retry_qa_fix_rounds": qa_fix_rounds,
+        }
+        try:
+            await db.commit()
+            await db.refresh(task)
+        except Exception as e:
+            local_lookup_error = str(e)
+
+    return TaskRetryResponse(
+        identifier=identifier,
+        zhixing_task_id=str(task.id) if task is not None else None,
+        metagpt_job_id=job_id,
+        status=task.status if task is not None else str(retry_result.get("status", "queued")),
+        retry=retry_result,
+        local_lookup_error=local_lookup_error,
+        qa_fix_rounds=qa_fix_rounds,
+    )
 
 
 @router.websocket("/{job_id}/logs")
