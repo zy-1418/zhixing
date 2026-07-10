@@ -15,7 +15,7 @@
 - 无第三方认证框架的 JWT 注册/登录/当前用户接口。
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
-- MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- MetaGPT SOP 提交、公共任务状态查询、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
@@ -40,18 +40,19 @@
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。
 
+公共任务契约已覆盖：
+
+- `GET /api/v1/tasks/{identifier}`：支持知行 task UUID 或 MetaGPT job id，优先查本地任务，再代理 MetaGPT 状态。
+- `POST /api/v1/tasks/{identifier}/retry`：支持按 task UUID 或 job id 触发 MetaGPT optimize 重试。
+
+当 PostgreSQL 或 MetaGPT-X 在 Cloud 中不可用时，上述端点返回 `blocked` 响应而不是中断请求。
+
 ## 本地验证建议
 
 ```bash
 python3 -m pip install -r services/api/requirements.txt
 PYTHONPATH=services/api:services python3 -m compileall services/api services/metagpt_bridge
-PYTHONPATH=services/api:services python3 - <<'PY'
-from main import app
-paths = app.openapi()["paths"]
-for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
-    assert path in paths, path
-print("openapi ok")
-PY
+PYTHONPATH=services/api:services python3 scripts/validate-api-contract.py
 ```
 
 本机具备 Docker/Flutter 后继续执行：
