@@ -16,6 +16,7 @@
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
 - MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- 公开任务契约：`GET /api/v1/tasks/{identifier}` 与 `POST /api/v1/tasks/{identifier}/retry` 支持知行任务 ID 或 MetaGPT job ID，并在 Cloud 依赖不可达时返回 blocked 占位状态。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
@@ -40,11 +41,16 @@
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。
 
+## 自动化验证
+
+- `scripts/validate-api-contract.py` 校验 OpenAPI 中的核心 HTTP 路由，并单独检查任务日志 WebSocket 路由。
+
 ## 本地验证建议
 
 ```bash
 python3 -m pip install -r services/api/requirements.txt
 PYTHONPATH=services/api:services python3 -m compileall services/api services/metagpt_bridge
+PYTHONPATH=services/api:services python3 scripts/validate-api-contract.py
 PYTHONPATH=services/api:services python3 - <<'PY'
 from main import app
 paths = app.openapi()["paths"]
