@@ -100,6 +100,30 @@ class TaskRead(BaseModel):
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
+class TaskStatusResponse(BaseModel):
+    zhixing_task_id: str | None = None
+    metagpt_job_id: str
+    status: str
+    source: str
+    local_task: TaskRead | None = None
+    remote: dict[str, Any] | None = None
+    blocked: bool = False
+    reason: str | None = None
+
+
+class RetryTaskRequest(BaseModel):
+    qa_fix_rounds: int = Field(3, ge=1, le=10)
+
+
+class RetryTaskResponse(BaseModel):
+    zhixing_task_id: str | None = None
+    metagpt_job_id: str
+    status: str
+    retry: dict[str, Any] | None = None
+    blocked: bool = False
+    reason: str | None = None
+
+
 def _slugify(text: str) -> str:
     s = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
     s = re.sub(r"[\s_]+", "-", s.strip()).lower()
@@ -313,6 +337,103 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
             "reason": f"MetaGPT-X optimize unavailable: {e}",
             "qa_fix_rounds": qa_fix_rounds,
         }
+
+
+@router.get("/{identifier}", response_model=TaskStatusResponse)
+async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
+    """Public task status contract for both Zhixing task ids and MetaGPT job ids."""
+    local_task, local_error = await _find_local_task(identifier, db)
+    job_id = local_task.metagpt_job_id if local_task and local_task.metagpt_job_id else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+
+    try:
+        remote = await client.get_project(job_id)
+    except Exception as e:
+        remote = None
+        remote_error = f"MetaGPT-X status unavailable: {e}"
+    else:
+        remote_error = None
+
+    reason = remote_error or local_error
+    status = (
+        (remote or {}).get("status")
+        or (local_task.status if local_task else None)
+        or ("blocked" if reason else "unknown")
+    )
+    return TaskStatusResponse(
+        zhixing_task_id=str(local_task.id) if local_task else None,
+        metagpt_job_id=job_id,
+        status=status,
+        source="metagpt" if remote else "placeholder",
+        local_task=local_task,
+        remote=remote,
+        blocked=reason is not None,
+        reason=reason,
+    )
+
+
+@router.post("/{identifier}/retry", response_model=RetryTaskResponse)
+async def retry_task(
+    identifier: str,
+    body: RetryTaskRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retry a failed SOP task through MetaGPT optimize using the public route."""
+    body = body or RetryTaskRequest()
+    local_task, local_error = await _find_local_task(identifier, db)
+    job_id = local_task.metagpt_job_id if local_task and local_task.metagpt_job_id else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+
+    try:
+        retry = await client.optimize(job_id, qa_fix_rounds=body.qa_fix_rounds)
+    except Exception as e:
+        retry = None
+        remote_error = f"MetaGPT-X optimize unavailable: {e}"
+    else:
+        remote_error = None
+
+    reason = remote_error or local_error
+    if local_task is not None:
+        local_task.status = "queued" if retry else "blocked"
+        local_task.metadata_ = {
+            **(local_task.metadata_ or {}),
+            "last_retry": {
+                "qa_fix_rounds": body.qa_fix_rounds,
+                "blocked_reason": reason,
+            },
+        }
+        await db.commit()
+
+    return RetryTaskResponse(
+        zhixing_task_id=str(local_task.id) if local_task else None,
+        metagpt_job_id=job_id,
+        status=(retry or {}).get("status", "blocked" if reason else "queued"),
+        retry=retry,
+        blocked=reason is not None,
+        reason=reason,
+    )
+
+
+async def _find_local_task(
+    identifier: str, db: AsyncSession
+) -> tuple[Task | None, str | None]:
+    try:
+        task_id = uuid.UUID(identifier)
+    except ValueError:
+        task_id = None
+
+    try:
+        if task_id is not None:
+            task = await db.get(Task, task_id)
+        else:
+            result = await db.scalars(
+                select(Task).where(Task.metagpt_job_id == identifier)
+            )
+            task = result.first()
+    except Exception as e:
+        return None, f"Zhixing task database unavailable: {e}"
+
+    return task, None
 
 
 @router.websocket("/{job_id}/logs")
