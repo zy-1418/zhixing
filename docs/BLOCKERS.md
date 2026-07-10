@@ -17,3 +17,8 @@
 3. 启动本机 MetaGPT-X API：`METAGPT_X_API=http://127.0.0.1:8000`。
 4. 配置 `DIFY_API_KEY` 并启动 Dify。
 5. 运行后端导入、OpenAPI、Flutter analyze 与端到端任务提交检查。
+
+## API 降级行为
+
+- `GET /api/v1/tasks/{identifier}` 会先尝试按知行任务 UUID 或 MetaGPT job_id 查询本地任务；PostgreSQL 不可用时返回 `blocked` 占位，并继续尝试 MetaGPT-X 状态代理。
+- `POST /api/v1/tasks/{identifier}/retry` 会代理 MetaGPT-X `optimize`；Cloud 无法访问 `127.0.0.1:8000` 时返回 `blocked` 占位，不阻断工作流完成。
