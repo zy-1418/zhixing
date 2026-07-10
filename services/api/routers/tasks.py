@@ -315,6 +315,74 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+@router.get("/{id}")
+async def get_task_status(id: str, db: AsyncSession = Depends(get_db)):
+    """Public task status contract from docs/METAGPT_INTEGRATION.md.
+
+    The id may be either a 知行 task UUID or a MetaGPT-X job id.
+    """
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        task_id = uuid.UUID(id)
+    except ValueError:
+        task_id = None
+
+    if task_id is not None:
+        task = await db.get(Task, task_id)
+        if task is not None:
+            payload: dict[str, Any] = {
+                "zhixing_task_id": str(task.id),
+                "metagpt_job_id": task.metagpt_job_id,
+                "name": task.name,
+                "status": task.status,
+                "priority": task.priority,
+                "workflow_type": task.workflow_type,
+                "due_at": task.due_at,
+                "completed_at": task.completed_at,
+                "metadata": task.metadata_,
+            }
+            if task.metagpt_job_id:
+                try:
+                    payload["metagpt"] = await client.get_project(task.metagpt_job_id)
+                except Exception as e:
+                    payload["metagpt"] = {
+                        "blocked": True,
+                        "job_id": task.metagpt_job_id,
+                        "reason": f"MetaGPT-X status unavailable: {e}",
+                    }
+            return payload
+
+    try:
+        return await client.get_project(id)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.post("/{id}/retry")
+async def retry_task(id: str, qa_fix_rounds: int = 3, db: AsyncSession = Depends(get_db)):
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    job_id = id
+    try:
+        task_id = uuid.UUID(id)
+    except ValueError:
+        task_id = None
+
+    if task_id is not None:
+        task = await db.get(Task, task_id)
+        if task is not None and task.metagpt_job_id:
+            job_id = task.metagpt_job_id
+
+    try:
+        return await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        return {
+            "blocked": True,
+            "job_id": job_id,
+            "reason": f"MetaGPT-X optimize unavailable: {e}",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()
