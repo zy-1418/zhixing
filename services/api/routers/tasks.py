@@ -315,6 +315,25 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+@router.get("/{id}")
+async def get_task_status(id: str):
+    """Public task status contract for Zhixing task or MetaGPT job ids."""
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        return await client.get_project(id)
+    except Exception as e:
+        return {
+            "blocked": True,
+            "job_id": id,
+            "reason": f"MetaGPT-X status unavailable: {e}",
+        }
+
+
+@router.post("/{id}/retry")
+async def retry_task(id: str, qa_fix_rounds: int = 3):
+    return await optimize_metagpt_job(id, qa_fix_rounds=qa_fix_rounds)
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()
