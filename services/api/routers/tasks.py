@@ -315,6 +315,128 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
+async def _find_local_task(
+    identifier: str, db: AsyncSession
+) -> tuple[Task | None, str | None]:
+    try:
+        task_id = uuid.UUID(identifier)
+    except ValueError:
+        task_id = None
+
+    try:
+        if task_id is not None:
+            task = await db.get(Task, task_id)
+            if task is not None:
+                return task, None
+
+        result = await db.scalars(select(Task).where(Task.metagpt_job_id == identifier))
+        return result.first(), None
+    except Exception as e:
+        return None, f"PostgreSQL task lookup unavailable: {e}"
+
+
+def _task_payload(task: Task) -> dict[str, Any]:
+    return TaskRead.model_validate(task).model_dump(
+        mode="json",
+        by_alias=True,
+    )
+
+
+def _remote_status(remote: Any) -> str | None:
+    if isinstance(remote, dict):
+        status = remote.get("status") or remote.get("state")
+        return str(status) if status is not None else None
+    return None
+
+
+@router.get("/{identifier}")
+async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
+    local_task, lookup_error = await _find_local_task(identifier, db)
+    job_id = local_task.metagpt_job_id if local_task is not None else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+
+    remote: dict[str, Any] | None = None
+    remote_error: str | None = None
+    if job_id:
+        try:
+            remote = await client.get_project(job_id)
+        except Exception as e:
+            remote_error = f"MetaGPT-X status unavailable: {e}"
+
+    if local_task is None and remote is None and lookup_error is None and remote_error is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    status = (
+        _remote_status(remote)
+        or (local_task.status if local_task is not None else None)
+        or "blocked"
+    )
+    return {
+        "identifier": identifier,
+        "zhixing_task": _task_payload(local_task) if local_task is not None else None,
+        "metagpt_job_id": job_id,
+        "metagpt": remote,
+        "status": status,
+        "blocked": remote is None and (lookup_error is not None or remote_error is not None),
+        "blocked_reason": lookup_error or remote_error,
+    }
+
+
+@router.post("/{identifier}/retry")
+async def retry_task(
+    identifier: str,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    local_task, lookup_error = await _find_local_task(identifier, db)
+    job_id = local_task.metagpt_job_id if local_task is not None else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+
+    if not job_id:
+        result = {
+            "blocked": True,
+            "job_id": job_id,
+            "reason": "Task has no MetaGPT job id to retry.",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+        blocked_reason = result["reason"]
+    else:
+        try:
+            result = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+            blocked_reason = None
+        except Exception as e:
+            result = {
+                "blocked": True,
+                "job_id": job_id,
+                "reason": f"MetaGPT-X optimize unavailable: {e}",
+                "qa_fix_rounds": qa_fix_rounds,
+            }
+            blocked_reason = lookup_error or result["reason"]
+
+    if local_task is not None:
+        local_task.status = _remote_status(result) or (
+            "blocked" if result.get("blocked") else local_task.status
+        )
+        local_task.metadata_ = {
+            **(local_task.metadata_ or {}),
+            "last_retry": {
+                "at": datetime.utcnow().isoformat(),
+                "qa_fix_rounds": qa_fix_rounds,
+                "result": result,
+            },
+        }
+        await db.commit()
+
+    return {
+        "identifier": identifier,
+        "zhixing_task_id": str(local_task.id) if local_task is not None else None,
+        "metagpt_job_id": job_id,
+        "result": result,
+        "blocked": bool(result.get("blocked")),
+        "blocked_reason": blocked_reason,
+    }
+
+
 @router.websocket("/{job_id}/logs")
 async def stream_task_logs(websocket: WebSocket, job_id: str):
     await websocket.accept()
