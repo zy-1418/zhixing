@@ -197,6 +197,71 @@ def _enqueue_priority(task: Task, priority: Priority) -> None:
         _priority_queue.append(item)
 
 
+def _task_to_payload(task: Task) -> dict[str, Any]:
+    return {
+        "id": str(task.id),
+        "user_id": str(task.user_id),
+        "folder_id": str(task.folder_id) if task.folder_id else None,
+        "instruction": task.instruction,
+        "name": task.name,
+        "workflow_type": task.workflow_type,
+        "priority": task.priority,
+        "status": task.status,
+        "metagpt_job_id": task.metagpt_job_id,
+        "due_at": task.due_at.isoformat() if task.due_at else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "metadata": task.metadata_ or {},
+        "created_at": task.created_at.isoformat() if task.created_at else None,
+        "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+    }
+
+
+async def _find_task_by_identifier(
+    identifier: str, db: AsyncSession
+) -> tuple[Task | None, str | None]:
+    try:
+        try:
+            task_id = uuid.UUID(identifier)
+        except ValueError:
+            task_id = None
+
+        if task_id is not None:
+            task = await db.get(Task, task_id)
+            if task is not None:
+                return task, None
+
+        result = await db.scalars(
+            select(Task).where(Task.metagpt_job_id == identifier).limit(1)
+        )
+        return result.first(), None
+    except Exception as e:
+        return None, f"PostgreSQL task lookup unavailable: {e}"
+
+
+def _blocked_task_contract_payload(
+    *,
+    identifier: str,
+    action: str,
+    reason: str,
+    task: Task | None = None,
+    db_lookup_error: str | None = None,
+    qa_fix_rounds: int | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "blocked": True,
+        "identifier": identifier,
+        "action": action,
+        "reason": reason,
+    }
+    if task is not None:
+        payload["task"] = _task_to_payload(task)
+    if db_lookup_error:
+        payload["db_lookup_blocked"] = db_lookup_error
+    if qa_fix_rounds is not None:
+        payload["qa_fix_rounds"] = qa_fix_rounds
+    return payload
+
+
 @router.get("", response_model=list[TaskRead])
 async def list_tasks(
     user_id: uuid.UUID = Query(...),
@@ -313,6 +378,77 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
             "reason": f"MetaGPT-X optimize unavailable: {e}",
             "qa_fix_rounds": qa_fix_rounds,
         }
+
+
+@router.get("/{identifier}")
+async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
+    task, db_lookup_error = await _find_task_by_identifier(identifier, db)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        metagpt = await client.get_project(job_id)
+    except Exception as e:
+        if task is not None and not task.metagpt_job_id:
+            return {
+                "identifier": identifier,
+                "task": _task_to_payload(task),
+                "metagpt": None,
+                "source": "zhixing-db",
+            }
+        return _blocked_task_contract_payload(
+            identifier=identifier,
+            action="status",
+            reason=f"MetaGPT-X status unavailable: {e}",
+            task=task,
+            db_lookup_error=db_lookup_error,
+        )
+
+    return {
+        "identifier": identifier,
+        "task": _task_to_payload(task) if task is not None else None,
+        "metagpt": metagpt,
+        "source": "metagpt",
+    }
+
+
+@router.post("/{identifier}/retry")
+async def retry_task(
+    identifier: str,
+    qa_fix_rounds: int = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task, db_lookup_error = await _find_task_by_identifier(identifier, db)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    if task is not None and not task.metagpt_job_id:
+        return _blocked_task_contract_payload(
+            identifier=identifier,
+            action="retry",
+            reason="Task has no MetaGPT job id to optimize.",
+            task=task,
+            db_lookup_error=db_lookup_error,
+            qa_fix_rounds=qa_fix_rounds,
+        )
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        metagpt = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        return _blocked_task_contract_payload(
+            identifier=identifier,
+            action="retry",
+            reason=f"MetaGPT-X optimize unavailable: {e}",
+            task=task,
+            db_lookup_error=db_lookup_error,
+            qa_fix_rounds=qa_fix_rounds,
+        )
+
+    return {
+        "identifier": identifier,
+        "task": _task_to_payload(task) if task is not None else None,
+        "metagpt": metagpt,
+        "qa_fix_rounds": qa_fix_rounds,
+    }
 
 
 @router.websocket("/{job_id}/logs")
