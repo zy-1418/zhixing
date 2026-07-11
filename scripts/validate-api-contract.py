@@ -42,8 +42,8 @@ def main() -> int:
         raise SystemExit(f"Missing OpenAPI paths: {missing}")
 
     ws_paths = [getattr(route, "path", None) for route in tasks.router.routes]
-    if "/{job_id}/logs" not in ws_paths:
-        raise SystemExit("Missing task log WebSocket route: /{job_id}/logs")
+    if "/tasks/{job_id}/logs" not in ws_paths and "/{job_id}/logs" not in ws_paths:
+        raise SystemExit("Missing task log WebSocket route: /tasks/{job_id}/logs")
 
     print(f"openapi ok {len(paths)} paths; websocket ok")
     return 0
