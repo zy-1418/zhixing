@@ -10,6 +10,8 @@
 | Dify | 未配置 `DIFY_API_KEY`，且未启动自托管服务 | `/api/v1/dify/*` 返回 blocked/echo 占位响应 |
 | Redis / Meilisearch / Qdrant / Neo4j / Medusa | 中间件未启动 | 暴露 API 契约与配置项，返回 placeholder/blocked 状态 |
 
+任务公开契约已保留可验证的降级行为：`GET /api/v1/tasks/{identifier}` 与 `POST /api/v1/tasks/{identifier}/retry` 可接收知行任务 UUID 或 MetaGPT job_id；当 PostgreSQL 或 MetaGPT-X 在 Cloud 中不可用时，返回 `blocked=true` 与 `blocked_reasons[]`，而不是中断自动化流程。
+
 恢复本机验收时建议顺序：
 
 1. 安装 Docker 与 Flutter stable。
