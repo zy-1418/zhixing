@@ -100,6 +100,49 @@ class TaskRead(BaseModel):
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
+def _task_snapshot(task: Task | None) -> dict[str, Any] | None:
+    if task is None:
+        return None
+    return {
+        "id": str(task.id),
+        "user_id": str(task.user_id),
+        "folder_id": str(task.folder_id) if task.folder_id else None,
+        "instruction": task.instruction,
+        "name": task.name,
+        "workflow_type": task.workflow_type,
+        "priority": task.priority,
+        "status": task.status,
+        "metagpt_job_id": task.metagpt_job_id,
+        "due_at": task.due_at.isoformat() if task.due_at else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "metadata": task.metadata_ or {},
+        "created_at": task.created_at.isoformat() if task.created_at else None,
+        "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+    }
+
+
+async def _find_task_by_identifier(
+    identifier: str, db: AsyncSession
+) -> tuple[Task | None, str | None]:
+    """Resolve either a Zhixing task UUID or a MetaGPT job id."""
+    try:
+        try:
+            task_id = uuid.UUID(identifier)
+        except ValueError:
+            task_id = None
+
+        if task_id is not None:
+            task = await db.get(Task, task_id)
+        else:
+            result = await db.scalars(
+                select(Task).where(Task.metagpt_job_id == identifier).limit(1)
+            )
+            task = result.first()
+        return task, None
+    except Exception as e:
+        return None, f"PostgreSQL task lookup unavailable: {e}"
+
+
 def _slugify(text: str) -> str:
     s = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
     s = re.sub(r"[\s_]+", "-", s.strip()).lower()
@@ -332,3 +375,68 @@ async def stream_task_logs(websocket: WebSocket, job_id: str):
         )
     finally:
         await websocket.close()
+
+
+@router.get("/{identifier}")
+async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
+    task, db_blocked_reason = await _find_task_by_identifier(identifier, db)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    remote: dict[str, Any] | None = None
+    remote_blocked_reason: str | None = None
+
+    try:
+        remote = await client.get_project(job_id)
+    except Exception as e:
+        remote_blocked_reason = f"MetaGPT-X project status unavailable: {e}"
+
+    status = (
+        (remote or {}).get("status")
+        or (task.status if task else None)
+        or ("blocked" if remote_blocked_reason or db_blocked_reason else "unknown")
+    )
+    blocked_reasons = [
+        reason for reason in [db_blocked_reason, remote_blocked_reason] if reason
+    ]
+    return {
+        "identifier": identifier,
+        "zhixing_task_id": str(task.id) if task else None,
+        "metagpt_job_id": job_id,
+        "status": status,
+        "task": _task_snapshot(task),
+        "remote": remote,
+        "blocked": bool(blocked_reasons),
+        "blocked_reason": "; ".join(blocked_reasons) or None,
+    }
+
+
+@router.post("/{identifier}/retry")
+async def retry_task(
+    identifier: str,
+    qa_fix_rounds: int = Query(3, ge=1, le=10),
+    db: AsyncSession = Depends(get_db),
+):
+    task, db_blocked_reason = await _find_task_by_identifier(identifier, db)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+
+    try:
+        result = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+        optimize_blocked_reason = None
+    except Exception as e:
+        result = None
+        optimize_blocked_reason = f"MetaGPT-X optimize unavailable: {e}"
+
+    blocked_reasons = [
+        reason for reason in [db_blocked_reason, optimize_blocked_reason] if reason
+    ]
+    return {
+        "identifier": identifier,
+        "zhixing_task_id": str(task.id) if task else None,
+        "metagpt_job_id": job_id,
+        "qa_fix_rounds": qa_fix_rounds,
+        "task": _task_snapshot(task),
+        "result": result,
+        "blocked": bool(blocked_reasons),
+        "blocked_reason": "; ".join(blocked_reasons) or None,
+    }
