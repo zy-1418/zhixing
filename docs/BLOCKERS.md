@@ -17,3 +17,8 @@
 3. 启动本机 MetaGPT-X API：`METAGPT_X_API=http://127.0.0.1:8000`。
 4. 配置 `DIFY_API_KEY` 并启动 Dify。
 5. 运行后端导入、OpenAPI、Flutter analyze 与端到端任务提交检查。
+
+## API 占位契约
+
+- `GET /api/v1/tasks/{identifier}` 支持知行任务 UUID 或 MetaGPT job_id。Cloud 中 PostgreSQL 或 MetaGPT-X 不可用时返回 `blocked=true`、`status=blocked` 或本地任务状态，并附带 `blocked_reason`。
+- `POST /api/v1/tasks/{identifier}/retry` 映射 MetaGPT-X `optimize`。Cloud 中 MetaGPT-X 不可用时不抛出 5xx，而返回 `blocked=true` 与重试轮数，方便前端展示「待本机联调」状态。
