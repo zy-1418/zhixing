@@ -5,7 +5,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket
 from pydantic import BaseModel, Field
@@ -402,7 +402,7 @@ async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
 @router.post("/{identifier}/retry", response_model=TaskRetryResult)
 async def retry_task(
     identifier: str,
-    qa_fix_rounds: int = Query(3, ge=1, le=10),
+    qa_fix_rounds: Annotated[int, Query(ge=1, le=10)] = 3,
     db: AsyncSession = Depends(get_db),
 ):
     local_task, lookup_error = await _find_local_task(identifier, db)
