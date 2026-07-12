@@ -15,7 +15,7 @@
 - 无第三方认证框架的 JWT 注册/登录/当前用户接口。
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
-- MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- MetaGPT SOP 提交、公开任务状态查询、QA retry 封装、任务日历、优先级队列占位、WS 日志代理。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
@@ -39,6 +39,13 @@
 ## Cloud 降级
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。
+
+任务状态与重试端点支持使用知行任务 UUID 或 MetaGPT job id：
+
+- `GET /api/v1/tasks/{identifier}`
+- `POST /api/v1/tasks/{identifier}/retry`
+
+当 PostgreSQL 或 MetaGPT-X 在 Cloud 中不可用时，上述端点返回 `blocked=true`、`blocked_reason` / `db_error`，用于保留客户端契约并继续工作流。
 
 ## 本地验证建议
 
