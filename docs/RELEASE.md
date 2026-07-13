@@ -16,6 +16,7 @@
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
 - MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- 公开任务状态与重试契约：`GET /api/v1/tasks/{identifier}`、`POST /api/v1/tasks/{identifier}/retry`，支持知行 task UUID 或 MetaGPT job id。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
@@ -39,6 +40,7 @@
 ## Cloud 降级
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。
+任务状态/重试端点在 PostgreSQL 或 MetaGPT-X 不可用时返回 `blocked` 与原因，便于前端展示降级状态。
 
 ## 本地验证建议
 
