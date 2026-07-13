@@ -5,7 +5,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket
 from pydantic import BaseModel, Field
@@ -98,6 +98,27 @@ class TaskRead(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+
+class TaskStatusResponse(BaseModel):
+    identifier: str
+    zhixing_task_id: str | None = None
+    metagpt_job_id: str | None = None
+    local_status: str | None = None
+    remote_status: str | None = None
+    remote: dict[str, Any] | None = None
+    blocked: bool = False
+    blocked_reason: str | None = None
+
+
+class TaskRetryResponse(BaseModel):
+    identifier: str
+    zhixing_task_id: str | None = None
+    metagpt_job_id: str
+    retry: dict[str, Any] | None = None
+    blocked: bool = False
+    blocked_reason: str | None = None
+    qa_fix_rounds: int
 
 
 def _slugify(text: str) -> str:
@@ -247,6 +268,119 @@ async def task_calendar(
     return result.all()
 
 
+@router.get("/queue")
+async def get_queue():
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    return await _queue_status(client)
+
+
+async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
+    try:
+        remote = await client.queue_status()
+        return {"remote": remote, "local_priority": _priority_queue}
+    except Exception as e:
+        return {
+            "remote": None,
+            "local_priority": _priority_queue,
+            "blocked": True,
+            "reason": f"MetaGPT-X queue unavailable: {e}",
+        }
+
+
+@router.get("/{identifier}", response_model=TaskStatusResponse)
+async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
+    task, db_error = await _find_task_by_identifier(db, identifier)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+
+    try:
+        remote = await client.get_project(job_id)
+    except Exception as e:
+        reasons = []
+        if db_error:
+            reasons.append(f"PostgreSQL unavailable: {db_error}")
+        reasons.append(f"MetaGPT-X status unavailable: {e}")
+        return TaskStatusResponse(
+            identifier=identifier,
+            zhixing_task_id=str(task.id) if task else None,
+            metagpt_job_id=job_id,
+            local_status=task.status if task else None,
+            blocked=True,
+            blocked_reason="; ".join(reasons),
+        )
+
+    return TaskStatusResponse(
+        identifier=identifier,
+        zhixing_task_id=str(task.id) if task else None,
+        metagpt_job_id=job_id,
+        local_status=task.status if task else None,
+        remote_status=str(remote.get("status")) if isinstance(remote, dict) else None,
+        remote=remote,
+        blocked=bool(db_error),
+        blocked_reason=f"PostgreSQL unavailable: {db_error}" if db_error else None,
+    )
+
+
+@router.post("/{identifier}/retry", response_model=TaskRetryResponse)
+async def retry_task(
+    identifier: str,
+    qa_fix_rounds: Annotated[int, Query(ge=1, le=10)] = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    task, db_error = await _find_task_by_identifier(db, identifier)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+
+    try:
+        retry = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+    except Exception as e:
+        reasons = []
+        if db_error:
+            reasons.append(f"PostgreSQL unavailable: {db_error}")
+        reasons.append(f"MetaGPT-X optimize unavailable: {e}")
+        return TaskRetryResponse(
+            identifier=identifier,
+            zhixing_task_id=str(task.id) if task else None,
+            metagpt_job_id=job_id,
+            retry=None,
+            blocked=True,
+            blocked_reason="; ".join(reasons),
+            qa_fix_rounds=qa_fix_rounds,
+        )
+
+    return TaskRetryResponse(
+        identifier=identifier,
+        zhixing_task_id=str(task.id) if task else None,
+        metagpt_job_id=job_id,
+        retry=retry,
+        blocked=bool(db_error),
+        blocked_reason=f"PostgreSQL unavailable: {db_error}" if db_error else None,
+        qa_fix_rounds=qa_fix_rounds,
+    )
+
+
+async def _find_task_by_identifier(
+    db: AsyncSession, identifier: str
+) -> tuple[Task | None, str | None]:
+    try:
+        task_id = uuid.UUID(identifier)
+    except ValueError:
+        task_id = None
+
+    try:
+        if task_id is not None:
+            task = await db.get(Task, task_id)
+            if task is not None:
+                return task, None
+
+        result = await db.scalars(
+            select(Task).where(Task.metagpt_job_id == identifier).limit(1)
+        )
+        return result.first(), None
+    except Exception as e:
+        return None, str(e)
+
+
 @router.patch("/{task_id}", response_model=TaskRead)
 async def update_task(
     task_id: uuid.UUID, body: TaskUpdate, db: AsyncSession = Depends(get_db)
@@ -273,25 +407,6 @@ async def delete_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
-@router.get("/queue")
-async def get_queue():
-    client = MetaGPTClient(base_url=settings.metagpt_x_api)
-    return await _queue_status(client)
-
-
-async def _queue_status(client: MetaGPTClient) -> dict[str, Any]:
-    try:
-        remote = await client.queue_status()
-        return {"remote": remote, "local_priority": _priority_queue}
-    except Exception as e:
-        return {
-            "remote": None,
-            "local_priority": _priority_queue,
-            "blocked": True,
-            "reason": f"MetaGPT-X queue unavailable: {e}",
-        }
-
-
 @router.get("/metagpt/{job_id}")
 async def get_metagpt_job(job_id: str):
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
@@ -302,7 +417,9 @@ async def get_metagpt_job(job_id: str):
 
 
 @router.post("/metagpt/{job_id}/optimize")
-async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
+async def optimize_metagpt_job(
+    job_id: str, qa_fix_rounds: Annotated[int, Query(ge=1, le=10)] = 3
+):
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
     try:
         return await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
