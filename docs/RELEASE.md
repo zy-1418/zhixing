@@ -16,6 +16,9 @@
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
 - MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- 公开任务状态/重试契约：`GET /api/v1/tasks/{identifier}` 与
+  `POST /api/v1/tasks/{identifier}/retry` 同时支持知行 task UUID 与
+  MetaGPT job id；Cloud 中依赖不可达时返回 blocked 占位。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
