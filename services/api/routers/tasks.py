@@ -100,10 +100,77 @@ class TaskRead(BaseModel):
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
+class TaskStatusResponse(BaseModel):
+    identifier: str
+    zhixing_task_id: str | None = None
+    metagpt_job_id: str | None = None
+    status: str
+    local: dict[str, Any] | None = None
+    remote: dict[str, Any] | None = None
+    blocked: bool = False
+    blocked_reason: str | None = None
+
+
 def _slugify(text: str) -> str:
     s = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
     s = re.sub(r"[\s_]+", "-", s.strip()).lower()
     return (s[:48] or "task").strip("-")
+
+
+def _task_snapshot(task: Task) -> dict[str, Any]:
+    return {
+        "id": str(task.id),
+        "user_id": str(task.user_id),
+        "folder_id": str(task.folder_id) if task.folder_id else None,
+        "instruction": task.instruction,
+        "name": task.name,
+        "workflow_type": task.workflow_type,
+        "priority": task.priority,
+        "status": task.status,
+        "metagpt_job_id": task.metagpt_job_id,
+        "due_at": task.due_at.isoformat() if task.due_at else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "metadata": task.metadata_ or {},
+        "created_at": task.created_at.isoformat() if task.created_at else None,
+        "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+    }
+
+
+async def _lookup_task_best_effort(
+    identifier: str, db: AsyncSession
+) -> tuple[Task | None, str | None]:
+    try:
+        task_id = uuid.UUID(identifier)
+    except ValueError:
+        task_id = None
+
+    try:
+        if task_id is not None:
+            task = await db.get(Task, task_id)
+        else:
+            result = await db.scalars(
+                select(Task).where(Task.metagpt_job_id == identifier).limit(1)
+            )
+            task = result.first()
+    except Exception as e:
+        return None, f"PostgreSQL task lookup unavailable: {e}"
+    return task, None
+
+
+async def _project_status_best_effort(
+    client: MetaGPTClient, job_id: str
+) -> tuple[dict[str, Any] | None, str | None]:
+    try:
+        return await client.get_project(job_id), None
+    except Exception as e:
+        return None, f"MetaGPT-X status unavailable: {e}"
+
+
+def _remote_status(remote: dict[str, Any] | None) -> str | None:
+    if not remote:
+        return None
+    status = remote.get("status") or remote.get("state")
+    return str(status) if status is not None else None
 
 
 @router.post("/sop", response_model=TaskResponse)
@@ -313,6 +380,60 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
             "reason": f"MetaGPT-X optimize unavailable: {e}",
             "qa_fix_rounds": qa_fix_rounds,
         }
+
+
+@router.get("/{identifier}", response_model=TaskStatusResponse)
+async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
+    task, lookup_error = await _lookup_task_best_effort(identifier, db)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    remote, remote_error = await _project_status_best_effort(client, job_id)
+    local_snapshot = _task_snapshot(task) if task else None
+    status = _remote_status(remote) or (task.status if task else "blocked")
+    blocked_reason = lookup_error or remote_error
+
+    return TaskStatusResponse(
+        identifier=identifier,
+        zhixing_task_id=str(task.id) if task else None,
+        metagpt_job_id=job_id,
+        status=status,
+        local=local_snapshot,
+        remote=remote,
+        blocked=remote is None and blocked_reason is not None,
+        blocked_reason=blocked_reason,
+    )
+
+
+@router.post("/{identifier}/retry", response_model=TaskStatusResponse)
+async def retry_task(identifier: str, qa_fix_rounds: int = 3, db: AsyncSession = Depends(get_db)):
+    task, lookup_error = await _lookup_task_best_effort(identifier, db)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        remote = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+        remote_error = None
+    except Exception as e:
+        remote = None
+        remote_error = f"MetaGPT-X optimize unavailable: {e}"
+
+    local_snapshot = _task_snapshot(task) if task else None
+    if task and remote is not None:
+        task.status = _remote_status(remote) or "queued"
+        await db.commit()
+        await db.refresh(task)
+        local_snapshot = _task_snapshot(task)
+
+    blocked_reason = lookup_error or remote_error
+    return TaskStatusResponse(
+        identifier=identifier,
+        zhixing_task_id=str(task.id) if task else None,
+        metagpt_job_id=job_id,
+        status=_remote_status(remote) or (task.status if task else "blocked"),
+        local=local_snapshot,
+        remote=remote,
+        blocked=remote is None and blocked_reason is not None,
+        blocked_reason=blocked_reason,
+    )
 
 
 @router.websocket("/{job_id}/logs")
