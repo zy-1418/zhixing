@@ -6,9 +6,10 @@
 |------|----------|------|
 | Docker / docker compose | `docker: command not found` | 保留并扩展 `infra/docker-compose.yml`，无法实际启动中间件 |
 | Flutter SDK | `flutter: command not found` | 手写 `apps/mobile` Flutter 壳与页面占位，无法执行 `flutter create/run/analyze` |
-| MetaGPT-X `127.0.0.1:8000` | Cloud 无法访问本机服务 | `/api/v1/tasks/sop` 在连接失败时返回 `metagpt-unavailable-*` 占位 job_id |
+| MetaGPT-X `127.0.0.1:8000` | Cloud 无法访问本机服务 | `/api/v1/tasks/sop` 在连接失败时返回 `metagpt-unavailable-*` 占位 job_id；`/api/v1/tasks/{identifier}` 与 `/api/v1/tasks/{identifier}/retry` 返回 `blocked` 详情 |
 | Dify | 未配置 `DIFY_API_KEY`，且未启动自托管服务 | `/api/v1/dify/*` 返回 blocked/echo 占位响应 |
 | Redis / Meilisearch / Qdrant / Neo4j / Medusa | 中间件未启动 | 暴露 API 契约与配置项，返回 placeholder/blocked 状态 |
+| PostgreSQL | Cloud 未启动本地数据库 | 公共任务状态/重试接口采用 best-effort 查询，数据库不可达时继续代理 MetaGPT-X 或返回 blocked |
 
 恢复本机验收时建议顺序：
 
