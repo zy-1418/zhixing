@@ -6,7 +6,7 @@
 |------|----------|------|
 | Docker / docker compose | `docker: command not found` | 保留并扩展 `infra/docker-compose.yml`，无法实际启动中间件 |
 | Flutter SDK | `flutter: command not found` | 手写 `apps/mobile` Flutter 壳与页面占位，无法执行 `flutter create/run/analyze` |
-| MetaGPT-X `127.0.0.1:8000` | Cloud 无法访问本机服务 | `/api/v1/tasks/sop` 在连接失败时返回 `metagpt-unavailable-*` 占位 job_id |
+| MetaGPT-X `127.0.0.1:8000` | Cloud 无法访问本机服务 | `/api/v1/tasks/sop` 在连接失败时返回 `metagpt-unavailable-*` 占位 job_id；任务状态与重试端点返回 `blocked` 诊断 |
 | Dify | 未配置 `DIFY_API_KEY`，且未启动自托管服务 | `/api/v1/dify/*` 返回 blocked/echo 占位响应 |
 | Redis / Meilisearch / Qdrant / Neo4j / Medusa | 中间件未启动 | 暴露 API 契约与配置项，返回 placeholder/blocked 状态 |
 
@@ -16,4 +16,4 @@
 2. `cd infra && docker compose up -d`。
 3. 启动本机 MetaGPT-X API：`METAGPT_X_API=http://127.0.0.1:8000`。
 4. 配置 `DIFY_API_KEY` 并启动 Dify。
-5. 运行后端导入、OpenAPI、Flutter analyze 与端到端任务提交检查。
+5. 运行后端导入、OpenAPI、Flutter analyze、端到端任务提交、`GET /api/v1/tasks/{identifier}` 状态查询与 `POST /api/v1/tasks/{identifier}/retry` QA 重试检查。
