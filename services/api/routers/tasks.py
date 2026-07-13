@@ -377,10 +377,10 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
         }
 
 
-@router.get("/{identifier}", response_model=PublicTaskStatus)
-async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
-    task, db_reason = await _find_task_by_identifier(identifier, db)
-    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+@router.get("/{task_id}", response_model=PublicTaskStatus)
+async def get_task_status(task_id: str, db: AsyncSession = Depends(get_db)):
+    task, db_reason = await _find_task_by_identifier(task_id, db)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else task_id
     local_task = _task_payload(task) if task is not None else None
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
 
@@ -389,7 +389,7 @@ async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         reasons = [r for r in [db_reason, f"MetaGPT-X status unavailable: {e}"] if r]
         return PublicTaskStatus(
-            identifier=identifier,
+            identifier=task_id,
             zhixing_task_id=str(task.id) if task is not None else None,
             metagpt_job_id=job_id,
             status=task.status if task is not None else "blocked",
@@ -408,7 +408,7 @@ async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
             await db.rollback()
 
     return PublicTaskStatus(
-        identifier=identifier,
+        identifier=task_id,
         zhixing_task_id=str(task.id) if task is not None else None,
         metagpt_job_id=job_id,
         status=str(remote_status or (task.status if task is not None else "running")),
@@ -417,14 +417,14 @@ async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/{identifier}/retry", response_model=PublicTaskRetryResponse)
+@router.post("/{task_id}/retry", response_model=PublicTaskRetryResponse)
 async def retry_task(
-    identifier: str,
+    task_id: str,
     qa_fix_rounds: int = Query(3, ge=1, le=10),
     db: AsyncSession = Depends(get_db),
 ):
-    task, db_reason = await _find_task_by_identifier(identifier, db)
-    job_id = task.metagpt_job_id if task and task.metagpt_job_id else identifier
+    task, db_reason = await _find_task_by_identifier(task_id, db)
+    job_id = task.metagpt_job_id if task and task.metagpt_job_id else task_id
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
 
     try:
@@ -432,7 +432,7 @@ async def retry_task(
     except Exception as e:
         reasons = [r for r in [db_reason, f"MetaGPT-X optimize unavailable: {e}"] if r]
         return PublicTaskRetryResponse(
-            identifier=identifier,
+            identifier=task_id,
             metagpt_job_id=job_id,
             qa_fix_rounds=qa_fix_rounds,
             blocked=True,
@@ -453,7 +453,7 @@ async def retry_task(
             await db.rollback()
 
     return PublicTaskRetryResponse(
-        identifier=identifier,
+        identifier=task_id,
         metagpt_job_id=job_id,
         qa_fix_rounds=qa_fix_rounds,
         remote=remote if isinstance(remote, dict) else {"value": remote},
