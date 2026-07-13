@@ -5,7 +5,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket
 from pydantic import BaseModel, Field
@@ -98,6 +98,57 @@ class TaskRead(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+
+def _task_to_payload(task: Task | None) -> dict[str, Any] | None:
+    if task is None:
+        return None
+    return TaskRead.model_validate(task).model_dump(mode="json", by_alias=True)
+
+
+async def _lookup_local_task(
+    identifier: str, db: AsyncSession
+) -> tuple[Task | None, str | None]:
+    try:
+        try:
+            task_id = uuid.UUID(identifier)
+        except ValueError:
+            task_id = None
+
+        if task_id is not None:
+            task = await db.get(Task, task_id)
+            if task is not None:
+                return task, None
+
+        result = await db.scalars(
+            select(Task).where(Task.metagpt_job_id == identifier).limit(1)
+        )
+        return result.first(), None
+    except Exception as e:
+        await db.rollback()
+        return None, f"PostgreSQL task lookup unavailable: {e}"
+
+
+def _remote_status(remote: dict[str, Any] | None) -> str | None:
+    if not remote:
+        return None
+    status = remote.get("status") or remote.get("state") or remote.get("phase")
+    return str(status) if status is not None else None
+
+
+async def _maybe_sync_task_status(
+    task: Task | None, remote: dict[str, Any] | None, db: AsyncSession
+) -> None:
+    remote_status = _remote_status(remote)
+    if task is None or remote_status is None or task.status == remote_status:
+        return
+    try:
+        task.status = remote_status
+        if remote_status == "completed" and task.completed_at is None:
+            task.completed_at = datetime.utcnow()
+        await db.commit()
+    except Exception:
+        await db.rollback()
 
 
 def _slugify(text: str) -> str:
@@ -302,7 +353,9 @@ async def get_metagpt_job(job_id: str):
 
 
 @router.post("/metagpt/{job_id}/optimize")
-async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
+async def optimize_metagpt_job(
+    job_id: str, qa_fix_rounds: Annotated[int, Query(ge=1, le=10)] = 3
+):
     client = MetaGPTClient(base_url=settings.metagpt_x_api)
     try:
         return await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
@@ -311,6 +364,95 @@ async def optimize_metagpt_job(job_id: str, qa_fix_rounds: int = 3):
             "blocked": True,
             "job_id": job_id,
             "reason": f"MetaGPT-X optimize unavailable: {e}",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+
+
+@router.get("/{identifier}")
+async def get_task_status(identifier: str, db: AsyncSession = Depends(get_db)):
+    local_task, db_error = await _lookup_local_task(identifier, db)
+    job_id = local_task.metagpt_job_id if local_task else identifier
+    remote: dict[str, Any] | None = None
+    remote_error: str | None = None
+
+    if job_id:
+        client = MetaGPTClient(base_url=settings.metagpt_x_api)
+        try:
+            remote = await client.get_project(job_id)
+        except Exception as e:
+            remote_error = f"MetaGPT-X status unavailable: {e}"
+
+    await _maybe_sync_task_status(local_task, remote, db)
+
+    local_payload = _task_to_payload(local_task)
+    status = _remote_status(remote)
+    if status is None and local_task is not None:
+        status = local_task.status
+    if status is None:
+        status = "blocked" if (db_error or remote_error) else "unknown"
+
+    blocked_reasons = [reason for reason in (db_error, remote_error) if reason]
+    return {
+        "identifier": identifier,
+        "zhixing_task_id": str(local_task.id) if local_task else None,
+        "metagpt_job_id": job_id,
+        "status": status,
+        "local_task": local_payload,
+        "metagpt": remote,
+        "blocked": bool(blocked_reasons) and remote is None and local_task is None,
+        "blocked_reason": "; ".join(blocked_reasons) if blocked_reasons else None,
+    }
+
+
+@router.post("/{identifier}/retry")
+async def retry_task(
+    identifier: str,
+    qa_fix_rounds: Annotated[int, Query(ge=1, le=10)] = 3,
+    db: AsyncSession = Depends(get_db),
+):
+    local_task, db_error = await _lookup_local_task(identifier, db)
+    job_id = local_task.metagpt_job_id if local_task else identifier
+
+    if not job_id:
+        return {
+            "identifier": identifier,
+            "zhixing_task_id": str(local_task.id) if local_task else None,
+            "metagpt_job_id": None,
+            "status": local_task.status if local_task else "blocked",
+            "blocked": True,
+            "blocked_reason": "Task has no MetaGPT job id to retry.",
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+
+    client = MetaGPTClient(base_url=settings.metagpt_x_api)
+    try:
+        result = await client.optimize(job_id, qa_fix_rounds=qa_fix_rounds)
+        retry_status = _remote_status(result) or "queued"
+        if local_task is not None:
+            local_task.status = retry_status
+            await db.commit()
+        return {
+            "identifier": identifier,
+            "zhixing_task_id": str(local_task.id) if local_task else None,
+            "metagpt_job_id": job_id,
+            "status": retry_status,
+            "retry": result,
+            "blocked": False,
+            "blocked_reason": db_error,
+            "qa_fix_rounds": qa_fix_rounds,
+        }
+    except Exception as e:
+        if local_task is not None:
+            await db.rollback()
+        reasons = [reason for reason in (db_error, f"MetaGPT-X optimize unavailable: {e}") if reason]
+        return {
+            "identifier": identifier,
+            "zhixing_task_id": str(local_task.id) if local_task else None,
+            "metagpt_job_id": job_id,
+            "status": local_task.status if local_task else "blocked",
+            "retry": None,
+            "blocked": True,
+            "blocked_reason": "; ".join(reasons),
             "qa_fix_rounds": qa_fix_rounds,
         }
 
