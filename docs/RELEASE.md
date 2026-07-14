@@ -15,7 +15,7 @@
 - 无第三方认证框架的 JWT 注册/登录/当前用户接口。
 - 工作区文件夹 CRUD、树形接口、会话 JSON/Markdown 导出。
 - 笔记 CRUD 与 Markdown 导出。
-- MetaGPT SOP 提交、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
+- MetaGPT SOP 提交、任务状态查询、任务重试、任务日历、优先级队列占位、WS 日志代理、QA optimize 重试。
 - Flutter 五 Tab 壳：广场、工作区、写笔记、好友、个人。
 - Dify 自托管与「林」Agent 配置文档。
 
@@ -40,6 +40,8 @@
 
 Cursor Cloud 缺少 Docker、Flutter SDK，且无法访问开发者本机 `127.0.0.1:8000` MetaGPT-X。因此本次实现保留 API 契约与占位响应，外部服务实际联调需在本机执行。
 
+`GET /api/v1/tasks/{task_id}` 与 `POST /api/v1/tasks/{task_id}/retry` 支持传入知行任务 UUID 或 MetaGPT job_id；当 PostgreSQL 或 MetaGPT-X 在 Cloud 中不可达时返回 `blocked=true` 与 `blockers[]`，便于前端展示可恢复的阻塞原因。
+
 ## 本地验证建议
 
 ```bash
@@ -48,7 +50,15 @@ PYTHONPATH=services/api:services python3 -m compileall services/api services/met
 PYTHONPATH=services/api:services python3 - <<'PY'
 from main import app
 paths = app.openapi()["paths"]
-for path in ["/health", "/api/v1/auth/register", "/api/v1/tasks/sop", "/api/v1/dify/chat", "/api/v1/social/posts"]:
+for path in [
+    "/health",
+    "/api/v1/auth/register",
+    "/api/v1/tasks/sop",
+    "/api/v1/tasks/{task_id}",
+    "/api/v1/tasks/{task_id}/retry",
+    "/api/v1/dify/chat",
+    "/api/v1/social/posts",
+]:
     assert path in paths, path
 print("openapi ok")
 PY
